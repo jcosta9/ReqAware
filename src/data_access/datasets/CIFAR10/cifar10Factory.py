@@ -10,7 +10,7 @@ from torch.utils.data import random_split
 import torchvision
 import torchvision.transforms as transforms
 
-from .data_factory import DatasetFactory
+from data_access.data_factory import DatasetFactory
 
 
 CIFAR10_train_transform = transforms.Compose(
