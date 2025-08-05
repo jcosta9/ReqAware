@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 from PIL import Image
 
+import torch
 from torch.utils.data import Dataset
 
 
@@ -53,7 +54,7 @@ class ConceptAwareDataset(Dataset):
         try:
             self.concepts_df = pd.read_csv(self.concepts_file).set_index("class_id")
             self.concepts = {
-                class_id: concepts_list
+                class_id: torch.tensor(concepts_list, dtype=torch.float32)
                 for class_id, concepts_list in zip(
                     range(len(self.concepts_df)), self.concepts_df.iloc[:, 1:].values
                 )
