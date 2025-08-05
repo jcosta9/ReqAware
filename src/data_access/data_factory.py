@@ -36,9 +36,6 @@ class DatasetFactory(ABC):
         self.concepts_file = (
             config.concepts_file if hasattr(config, "concepts_file") else None
         )
-        self.extended_analysis = (
-            config.extended_analysis if hasattr(config, "extended_analysis") else False
-        )
 
     @abstractmethod
     def load_datasets(self):
