@@ -1,4 +1,4 @@
-from .datasets.CIFAR10 import CIFAR10Factory
+from .datasets import CIFAR10Factory
 
 
 class DatasetFactoryBuilder:

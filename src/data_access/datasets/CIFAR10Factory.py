@@ -5,6 +5,7 @@ Author: Joao Paulo Costa de Araujo
 Date: 2025-04-29
 """
 
+import logging
 import torch
 from torch.utils.data import random_split
 import torchvision
@@ -42,7 +43,7 @@ class CIFAR10Factory(DatasetFactory):
         """
         super().__init__(config)
 
-    def get_datasets(
+    def load_datasets(
         self,
         train_transform=CIFAR10_train_transform,
         test_transform=CIFAR10_test_transform,
@@ -55,6 +56,7 @@ class CIFAR10Factory(DatasetFactory):
             test_transform (callable, optional): Data transformations for test set.
                                                                 Defaults to CIFAR10_test_transform.
         """
+        logging.info(f"[DATA ACCESS] Loading CIFAR-10 training dataset")
         full_train_dataset = torchvision.datasets.CIFAR10(
             root=self.config.data_path / self.config.dataset,
             train=True,
@@ -62,6 +64,7 @@ class CIFAR10Factory(DatasetFactory):
             transform=train_transform,
         )
 
+        logging.info(f"[DATA ACCESS] Splitting training and validation datasets")
         val_size = int(len(full_train_dataset) * self.config.val_split)
         train_size = len(full_train_dataset) - val_size
 
@@ -71,11 +74,22 @@ class CIFAR10Factory(DatasetFactory):
             generator=torch.Generator().manual_seed(self.config.seed),
         )
 
+        logging.info(f"[DATA ACCESS] Loading CIFAR-10 test dataset")
         self.test_dataset = torchvision.datasets.CIFAR10(
             root=self.config.data_path / self.config.dataset,
             train=False,
             download=True,
             transform=test_transform,
         )
+
+        logging.info(
+            f"[DATA ACCESS] Training dataset length: {len(self.train_dataset)}"
+        )
+        logging.info(
+            f"[DATA ACCESS] Validation dataset length: {len(self.val_dataset)}"
+        )
+        logging.info(f"[DATA ACCESS] Test dataset length: {len(self.test_dataset)}")
+
+        self.datasets_loaded = True
 
         return self
