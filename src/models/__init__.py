@@ -1,2 +1,3 @@
 from .ResNet import ResNetCifar10
-from .trainer import StandardTrainer
+from .base_trainer import BaseTrainer
+from .standard_trainer import StandardTrainer
