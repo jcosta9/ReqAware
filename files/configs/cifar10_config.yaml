@@ -1,0 +1,29 @@
+seed: 42
+device: cuda
+print_freq: 30
+log_dir: "runs/default"
+training:
+    lr: 0.001
+    epochs: 10
+    lr_step: 10
+    lr_gamma: 0.5
+    early_stopping_patience: 15
+    momentum: 0.9
+    weight_decay: 5e-4
+    checkpoint_dir: "/vol/home-vol2/se/costajoa/Dokumente/mnn_cs/files/models"
+    criterion: cross_entropy
+    optimizer: sgd
+    scheduler: cosine_annealing
+    scheduler_params: 
+        T_max: 10
+        eta_min: 0
+dataset:
+    n_labels: 10
+    batch_size: 128
+    num_workers: 4
+    shuffle_dataset: True
+    pin_memory: True
+    dataset: cifar10
+    data_path: /vol/home-vol2/se/costajoa/Dokumente/data/raw/GTSRB/converted
+    val_split: 0.8
+    concepts_file: null
