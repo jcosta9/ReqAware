@@ -1,15 +1,10 @@
-from .datasets import CIFAR10Factory, GTSRBFactory
-
-supported_datasets = {
-    "cifar10": CIFAR10Factory,
-    "gtsrb": GTSRBFactory,
-}
-
+from .registry import DATASET_FACTORY_REGISTRY
+from omegaconf import DictConfig
 
 class DatasetFactoryBuilder:
     @staticmethod
-    def build_factory(config):
+    def build_factory(config: DictConfig):
         try:
-            return supported_datasets[config.dataset.lower()](config)
+            return DATASET_FACTORY_REGISTRY[config.dataset.lower()](config)
         except KeyError:
             raise KeyError(f"Unsupported dataset: {config.dataset}")
