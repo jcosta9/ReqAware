@@ -4,6 +4,7 @@ This module provides code for loading the GTSRB dataset.
 Author: Joao Paulo Costa de Araujo
 Date: 2025-04-29
 """
+
 import logging
 
 import torch

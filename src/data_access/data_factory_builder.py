@@ -1,6 +1,7 @@
 from .registry import DATASET_FACTORY_REGISTRY
 from omegaconf import DictConfig
 
+
 class DatasetFactoryBuilder:
     @staticmethod
     def build_factory(config: DictConfig):

@@ -6,7 +6,12 @@ import torch
 from omegaconf import MISSING
 
 from data_access.registry import DATASET_FACTORY_REGISTRY
-from models.registries import CRITERIONS_REGISTRY, OPTIMIZERS_REGISTRY, SCHEDULERS_REGISTRY
+from models.registries import (
+    CRITERIONS_REGISTRY,
+    OPTIMIZERS_REGISTRY,
+    SCHEDULERS_REGISTRY,
+)
+
 
 @dataclass
 class DatasetConfig:
@@ -30,7 +35,10 @@ class DatasetConfig:
             raise FileNotFoundError(f"Data path {self.data_path} does not exist")
 
         if self.concepts_file and not self.concepts_file.exists():
-            raise FileNotFoundError(f"Concepts file {self.concepts_file} does not exist")
+            raise FileNotFoundError(
+                f"Concepts file {self.concepts_file} does not exist"
+            )
+
 
 @dataclass
 class TrainingConfig:
@@ -57,7 +65,7 @@ class TrainingConfig:
             self.optimizer = OPTIMIZERS_REGISTRY[self.optimizer]
         else:
             raise ValueError(f"Unknown optimizer {self.optimizer}")
-        
+
         if self.scheduler in SCHEDULERS_REGISTRY:
             self.scheduler = SCHEDULERS_REGISTRY[self.scheduler]
         else:
@@ -65,9 +73,8 @@ class TrainingConfig:
 
         if not self.checkpoint_dir.exists():
             raise FileNotFoundError(f"Data path {self.checkpoint_dir} does not exist")
-        
 
-    
+
 @dataclass
 class StandardTrainerConfig:
     seed: int = 42
