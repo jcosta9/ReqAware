@@ -18,12 +18,12 @@ training:
         T_max: 10
         eta_min: 0
 dataset:
+    name: cifar10
     n_labels: 10
     batch_size: 128
     num_workers: 4
     shuffle_dataset: True
     pin_memory: True
-    dataset: cifar10
     data_path: /vol/home-vol2/se/costajoa/Dokumente/data/raw/GTSRB/converted
     val_split: 0.8
     concepts_file: null

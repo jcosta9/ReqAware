@@ -67,10 +67,10 @@ class DatasetFactory(ABC):
 
         return torch.utils.data.DataLoader(
             dataset,
-            batch_size=self.config.batch_size,
-            shuffle=self.config.shuffle_dataset,
-            num_workers=self.config.num_workers,
-            pin_memory=self.config.pin_memory,
+            batch_size=self.config.dataset.batch_size,
+            shuffle=self.config.dataset.shuffle_dataset,
+            num_workers=self.config.dataset.num_workers,
+            pin_memory=self.config.dataset.pin_memory,
             worker_init_fn=seed_worker,  # Ensures reproducibility
             generator=torch.Generator().manual_seed(
                 self.config.seed

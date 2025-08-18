@@ -8,7 +8,6 @@ OPTIMIZERS_REGISTRY = {
     "rmsprop": optim.RMSprop,
     "adagrad": optim.Adagrad,
     "adadelta": optim.Adadelta,
-
     # Less common but useful
     "adamax": optim.Adamax,
     "asgd": optim.ASGD,

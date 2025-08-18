@@ -10,7 +10,7 @@ from models.registries import CRITERIONS_REGISTRY, OPTIMIZERS_REGISTRY, SCHEDULE
 
 @dataclass
 class DatasetConfig:
-    dataset: str = "cifar10"
+    name: str = "cifar10"
     n_labels: int = 10
     batch_size: int = 128
     num_workers: int = 4
@@ -21,8 +21,8 @@ class DatasetConfig:
     concepts_file: Optional[Path] = None
 
     def resolve(self):
-        if self.dataset in DATASET_FACTORY_REGISTRY:
-            self.dataset = DATASET_FACTORY_REGISTRY[self.dataset]
+        if self.name in DATASET_FACTORY_REGISTRY:
+            self.factory = DATASET_FACTORY_REGISTRY[self.name]
         else:
             raise ValueError(f"Unknown dataset {self.dataset}")
 
@@ -70,7 +70,7 @@ class TrainingConfig:
     
 @dataclass
 class StandardTrainerConfig:
-    seed: float = 42
+    seed: int = 42
     print_freq: int = 30
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     log_dir: Path = "runs/default"

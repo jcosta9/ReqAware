@@ -58,14 +58,14 @@ class CIFAR10Factory(DatasetFactory):
         """
         logging.info(f"[DATA ACCESS] Loading CIFAR-10 training dataset")
         full_train_dataset = torchvision.datasets.CIFAR10(
-            root=self.config.data_path / self.config.dataset,
+            root=self.config.dataset.data_path / self.config.dataset.name,
             train=True,
             download=True,
             transform=train_transform,
         )
 
         logging.info(f"[DATA ACCESS] Splitting training and validation datasets")
-        val_size = int(len(full_train_dataset) * self.config.val_split)
+        val_size = int(len(full_train_dataset) * self.config.dataset.val_split)
         train_size = len(full_train_dataset) - val_size
 
         self.train_dataset, self.val_dataset = random_split(
@@ -76,7 +76,7 @@ class CIFAR10Factory(DatasetFactory):
 
         logging.info(f"[DATA ACCESS] Loading CIFAR-10 test dataset")
         self.test_dataset = torchvision.datasets.CIFAR10(
-            root=self.config.data_path / self.config.dataset,
+            root=self.config.dataset.data_path / self.config.dataset.name,
             train=False,
             download=True,
             transform=test_transform,
