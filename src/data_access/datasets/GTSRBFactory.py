@@ -72,7 +72,7 @@ class GTSRBFactory(DatasetFactory):
         self.train_dataset, self.val_dataset = random_split(
             full_train_dataset,
             [train_size, val_size],
-            generator=torch.Generator().manual_seed(self.config.seed),
+            generator=torch.Generator().manual_seed(self.seed),
         )
 
         logging.info(f"[DATA ACCESS] Loading GTSRB test dataset")

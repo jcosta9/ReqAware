@@ -22,7 +22,8 @@ class DatasetFactory(ABC):
         Args:
             config: configuration file
         """
-        self.config = config
+        self.seed = config.seed
+        self.config = config.dataset
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
@@ -33,9 +34,7 @@ class DatasetFactory(ABC):
         self.dataloaders_set = False
 
         # For concept aware datasets
-        self.concepts_file = (
-            config.concepts_file if hasattr(config, "concepts_file") else None
-        )
+        self.concepts_file = self.config.concepts_file
 
     @abstractmethod
     def load_datasets(self):
@@ -67,13 +66,13 @@ class DatasetFactory(ABC):
 
         return torch.utils.data.DataLoader(
             dataset,
-            batch_size=self.config.dataset.batch_size,
-            shuffle=self.config.dataset.shuffle_dataset,
-            num_workers=self.config.dataset.num_workers,
-            pin_memory=self.config.dataset.pin_memory,
+            batch_size=self.config.batch_size,
+            shuffle=self.config.shuffle_dataset,
+            num_workers=self.config.num_workers,
+            pin_memory=self.config.pin_memory,
             worker_init_fn=seed_worker,  # Ensures reproducibility
             generator=torch.Generator().manual_seed(
-                self.config.seed
+                self.seed
             ),  # Ensures reproducibility
         )
 
