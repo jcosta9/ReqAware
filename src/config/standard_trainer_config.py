@@ -6,48 +6,12 @@ import torch
 from omegaconf import MISSING
 
 from config.dataset_config import DatasetConfig
+from config.training_config import TrainingConfig
 from models.registries import (
     CRITERIONS_REGISTRY,
     OPTIMIZERS_REGISTRY,
     SCHEDULERS_REGISTRY,
 )
-
-
-
-
-@dataclass
-class TrainingConfig:
-    lr: float = 0.001
-    epochs: int = 10
-    lr_step: int = 10
-    lr_gamma: float = 0.5
-    early_stopping_patience: int = 15
-    momentum: float = 0.9
-    weight_decay: float = 5e-4
-    checkpoint_dir: Path = MISSING
-    criterion: str = "cross_entropy"
-    optimizer: str = "sgd"
-    scheduler: str = "cosine_annealing"
-    scheduler_params: Dict[str, Any] = field(default_factory=dict)
-
-    def resolve(self):
-        if self.criterion in CRITERIONS_REGISTRY:
-            self.criterion = CRITERIONS_REGISTRY[self.criterion]
-        else:
-            raise ValueError(f"Unknown criterion {self.criterion}")
-
-        if self.optimizer in OPTIMIZERS_REGISTRY:
-            self.optimizer = OPTIMIZERS_REGISTRY[self.optimizer]
-        else:
-            raise ValueError(f"Unknown optimizer {self.optimizer}")
-
-        if self.scheduler in SCHEDULERS_REGISTRY:
-            self.scheduler = SCHEDULERS_REGISTRY[self.scheduler]
-        else:
-            raise ValueError(f"Unknown scheduler {self.scheduler}")
-
-        if not self.checkpoint_dir.exists():
-            raise FileNotFoundError(f"Data path {self.checkpoint_dir} does not exist")
 
 
 @dataclass

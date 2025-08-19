@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 from pathlib import Path
-import torch
 from omegaconf import MISSING
 
 from data_access.registry import DATASET_FACTORY_REGISTRY
+
 
 @dataclass
 class DatasetConfig:
@@ -31,4 +31,39 @@ class DatasetConfig:
         if self.concepts_file and not self.concepts_file.exists():
             raise FileNotFoundError(
                 f"Concepts file {self.concepts_file} does not exist"
+            )
+
+        if self.n_labels <= 0:
+            raise ValueError("Number of labels must be a positive integer")
+
+        if self.val_split <= 0 or self.val_split >= 1:
+            raise ValueError("Validation split must be between 0 and 1")
+
+        self.extra_resolve()
+
+    def extra_resolve(self):
+        """
+        Placeholder for any additional resolution logic that might be needed.
+        This can be overridden in subclasses if specific datasets require extra steps.
+        """
+        pass
+
+
+@dataclass
+class ConceptDatasetConfig(DatasetConfig):
+    n_concepts: int = 43  # Example for GTSRB, adjust as needed
+    freeze_concept_predictor: bool = False
+    concept_predictor_file: Optional[Path] = None
+
+    def extra_resolve(self):
+        super().extra_resolve()
+        if self.n_concepts <= 0:
+            raise ValueError("Number of concepts must be a positive integer")
+        if self.freeze_concept_predictor and not self.concept_predictor_file:
+            raise ValueError(
+                "Concept predictor file must be specified if freezing the predictor"
+            )
+        if self.concept_predictor_file and not self.concept_predictor_file.exists():
+            raise FileNotFoundError(
+                f"Concept predictor file {self.concept_predictor_file} does not exist"
             )
