@@ -7,7 +7,8 @@ from sklearn.metrics import classification_report
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from models.base_trainer import BaseTrainer
+from .abstract import BaseTrainer
+
 
 class StandardTrainer(BaseTrainer):
     """
@@ -18,7 +19,6 @@ class StandardTrainer(BaseTrainer):
 
     def __init__(self, model, train_loader, val_loader, test_loader, config):
         super().__init__(model, train_loader, val_loader, test_loader, config)
-
 
     def _train_epoch(self, epoch):
         """
@@ -101,7 +101,6 @@ class StandardTrainer(BaseTrainer):
         loss = 0.0
         correct = 0
         total = 0
-
 
         for inputs, labels in tqdm.tqdm(dataloader, desc=f"{mode.title()} Evaluation"):
             inputs, labels = inputs.to(self.device), labels.to(self.device)

@@ -46,31 +46,32 @@ class BaseTrainer(ABC):
             val_loader (DataLoader): DataLoader for the validation dataset.
             config (Config): Configuration object containing training parameters and paths.
         """
-        self.config = config
-        self.model = model.to(config.device)
+        self.device = config.device
+        self.log_dir = config.log_dir
+        self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
-        self.device = config.device
+        self.config = config.training
 
-        self.criterion = config.criterion()
-        self.optimizer = config.optimizer(
+        self.criterion = self.config.criterion()
+        self.optimizer = self.config.optimizer(
             self.model.parameters(),
-            lr=config.lr,
+            lr=self.config.lr,
         )
-        self.scheduler = config.scheduler(  # TODO: Flexible scheduler
-            self.optimizer,
-            **config.scheduler_params
+        self.scheduler = self.config.scheduler(  # TODO: Flexible scheduler
+            self.optimizer, **self.config.scheduler_params
         )
         self.writer = SummaryWriter(
-            log_dir=config.log_dir
+            log_dir=self.log_dir
         )  # TODO: separate class for logging
 
-        os.makedirs(config.checkpoint_dir, exist_ok=True)
+        os.makedirs(self.config.checkpoint_dir, exist_ok=True)
         self.best_val_accuracy = 0.0
 
-        self.early_stopping = EarlyStopping(patience=config.early_stopping_patience)
-
+        self.early_stopping = EarlyStopping(
+            patience=self.config.early_stopping_patience
+        )
 
     def validate(self):
         """
@@ -131,10 +132,10 @@ class BaseTrainer(ABC):
         For each epoch, this method performs training, validation, and checkpointing.
         """
         self.on_train_start()
-        
+
         for epoch in range(self.config.epochs):
             print(f"\nEpoch {epoch+1}/{self.config.epochs}")
-            
+
             self.on_epoch_start(epoch)
             self._train_epoch(epoch)
             self.on_epoch_end(epoch, None)
@@ -153,7 +154,6 @@ class BaseTrainer(ABC):
         self.load_best_model()
         _, test_accuracy = self.test(self.test_loader)
         print(f"🎯 Final Test Accuracy: {test_accuracy:.4f}")
-
 
     @abstractmethod
     def _train_epoch(self, epoch):
@@ -183,9 +183,20 @@ class BaseTrainer(ABC):
         pass
 
     # Optional hooks for more control over training lifecycle
-    def on_train_start(self): pass
-    def on_train_end(self): pass
-    def on_epoch_start(self, epoch): pass
-    def on_epoch_end(self, epoch, metrics): pass
-    def on_batch_start(self, batch_idx, loss): pass
-    def on_batch_end(self, batch_idx, loss): pass
+    def on_train_start(self):
+        pass
+
+    def on_train_end(self):
+        pass
+
+    def on_epoch_start(self, epoch):
+        pass
+
+    def on_epoch_end(self, epoch, metrics):
+        pass
+
+    def on_batch_start(self, batch_idx, loss):
+        pass
+
+    def on_batch_end(self, batch_idx, loss):
+        pass

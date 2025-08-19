@@ -57,7 +57,7 @@ class TrainingConfig:
 
     def resolve(self):
         if self.criterion in CRITERIONS_REGISTRY:
-            self.criterion = CRITERIONS_REGISTRY[self.criterion]()
+            self.criterion = CRITERIONS_REGISTRY[self.criterion]
         else:
             raise ValueError(f"Unknown criterion {self.criterion}")
 
