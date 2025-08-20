@@ -11,6 +11,16 @@ from config.training_config import ConceptTrainingConfig
 
 
 @dataclass
-class CBMTrainerConfig(StandardTrainerConfig):
+class CBMTrainerConfig():
+    seed: int = 42
+    print_freq: int = 30
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    log_dir: Path = "runs/default"
     dataset: ConceptDatasetConfig = field(default_factory=ConceptDatasetConfig)
-    training: ConceptTrainingConfig = field(default_factory=ConceptTrainingConfig)
+    concept_predictor: ConceptTrainingConfig = field(default_factory=ConceptTrainingConfig)
+    label_predictor: ConceptTrainingConfig = field(default_factory=ConceptTrainingConfig)
+
+    def resolve(self):
+        self.dataset.resolve()
+        self.concept_predictor.resolve()
+        self.label_predictor.resolve()

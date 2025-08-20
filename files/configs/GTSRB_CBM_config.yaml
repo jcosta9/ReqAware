@@ -4,7 +4,7 @@ print_freq: 30
 log_dir: runs/default
 dataset:
     name: gtsrb
-    n_labels: 10
+    n_labels: 43
     n_concepts: 43
     batch_size: 128
     num_workers: 4
@@ -15,18 +15,35 @@ dataset:
     concepts_file: /vol/home-vol2/se/costajoa/Dokumente/data/raw/GTSRB/concepts/concepts_per_class.csv
     freeze_concept_predictor: False
     concept_predictor_file: null
-training:
+concept_predictor:
     lr: 0.001
-    epochs: 10
+    epochs: 2
     lr_step: 10
     lr_gamma: 0.5
     early_stopping_patience: 15
     momentum: 0.9
     weight_decay: 5e-4
-    checkpoint_dir: "/vol/home-vol2/se/costajoa/Dokumente/mnn_cs/files/models"
-    criterion: cross_entropy
+    checkpoint_dir: "/vol/home-vol2/se/costajoa/Dokumente/trainFuzzy/files/models"
+    criterion: bce_with_logits
     optimizer: sgd
     scheduler: cosine_annealing
     scheduler_params: 
         T_max: 10
         eta_min: 0
+label_predictor:
+    lr: 0.001
+    epochs: 2
+    lr_step: 10
+    lr_gamma: 0.5
+    early_stopping_patience: 15
+    momentum: 0.9
+    weight_decay: 5e-4
+    checkpoint_dir: "/vol/home-vol2/se/costajoa/Dokumente/trainFuzzy/files/models"
+    criterion: cross_entropy
+    optimizer: adam
+    scheduler: reduce_on_plateau
+    scheduler_params: 
+        mode: "min"
+        factor: 0.5
+        patience: 5
+        min_lr: 0.00001
