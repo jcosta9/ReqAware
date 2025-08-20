@@ -36,7 +36,15 @@ class BaseTrainer(ABC):
         best_val_accuracy (float): Best recorded validation accuracy.
     """
 
-    def __init__(self, model, train_loader, val_loader, test_loader, config):
+    def __init__(self, 
+    config,
+    model, 
+    train_loader, 
+    val_loader, 
+    test_loader,
+    log_dir=None, 
+    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    ):
         """
         Initialize the Trainer with model, data loaders, and training configuration.
 
@@ -46,13 +54,13 @@ class BaseTrainer(ABC):
             val_loader (DataLoader): DataLoader for the validation dataset.
             config (Config): Configuration object containing training parameters and paths.
         """
-        self.device = config.device
-        self.log_dir = config.log_dir
+        self.config = config
+        self.device = device
+        self.log_dir = log_dir
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
-        self.config = config.training
 
         self.criterion = self.config.criterion()
         self.optimizer = self.config.optimizer(
@@ -72,6 +80,8 @@ class BaseTrainer(ABC):
         self.early_stopping = EarlyStopping(
             patience=self.config.early_stopping_patience
         )
+
+        return self
 
     def validate(self):
         """
@@ -140,9 +150,9 @@ class BaseTrainer(ABC):
             self._train_epoch(epoch)
             self.on_epoch_end(epoch, None)
 
-            _, val_accuracy = self.validate()
+            val_loss, val_accuracy = self.validate()
             self.save_checkpoint(epoch, val_accuracy)
-            self.scheduler.step()
+            self.scheduler.step(val_loss)
 
             if self.early_stopping.early_stop:
                 break
@@ -154,6 +164,8 @@ class BaseTrainer(ABC):
         self.load_best_model()
         _, test_accuracy = self.test(self.test_loader)
         print(f"🎯 Final Test Accuracy: {test_accuracy:.4f}")
+        
+        return self.model, test_accuracy
 
     @abstractmethod
     def _train_epoch(self, epoch):
