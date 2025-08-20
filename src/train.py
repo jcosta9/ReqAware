@@ -6,7 +6,6 @@ from models.trainer import StandardTrainer
 from config import StandardTrainerConfig
 
 
-
 def load_config(config_path):
     """
     Load the configuration from a YAML file.
@@ -37,10 +36,17 @@ def main():
     model = ResNetCifar10(config)
 
     # Train
-    trainer = StandardTrainer(model, train_loader, val_loader, test_loader, config)
-    trainer.train()
+    trained_model, test_accuracy = StandardTrainer(
+                                        config=config.training,
+                                        model=model, 
+                                        train_loader=train_loader, 
+                                        val_loader=val_loader, 
+                                        test_loader=test_loader, 
+                                        log_dir=config.log_dir,
+                                        device=config.device
+                                    ).train()
 
-    return dataset_factory, model, trainer
+    return dataset_factory, trained_model
 
 
 if __name__ == "__main__":
