@@ -7,8 +7,8 @@ from sklearn.metrics import classification_report
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+from models.loss import CustomFuzzyLoss
 from .abstract import BaseTrainer
-
 
 class CBMConceptPredictorTrainer(BaseTrainer):
     """
@@ -35,6 +35,8 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                             log_dir, 
                             device
                         )
+        
+        self.criterion = CustomFuzzyLoss(self.config.criterion)
 
     def compute_accuracy(self, outputs, concepts):
         """
