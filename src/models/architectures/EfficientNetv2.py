@@ -23,10 +23,8 @@ from torchvision import models
 
 
 class EfficientNetv2(nn.Module):
-    def __init__(self, config):
+    def __init__(self, n_labels, device):
         super(EfficientNetv2, self).__init__()
-
-        self.config = config
 
         self.predictor = models.efficientnet_v2_s(
             weights=models.EfficientNet_V2_S_Weights.DEFAULT
@@ -36,9 +34,9 @@ class EfficientNetv2(nn.Module):
             params.requires_grad = True
 
         self.predictor.classifier[1] = nn.Linear(
-            in_features=1280, out_features=self.config.dataset.n_labels
+            in_features=1280, out_features=n_labels
         )
-        self.predictor.to(self.config.device)
+        self.predictor.to(device)
 
     def forward(self, x):
         return self.predictor(x)
