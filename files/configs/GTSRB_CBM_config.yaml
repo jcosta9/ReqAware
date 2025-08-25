@@ -11,9 +11,11 @@ dataset:
     num_workers: 4
     shuffle_dataset: True
     pin_memory: True
-    data_path: /vol/home-vol2/se/costajoa/Dokumente/data/raw/GTSRB/converted
+    data_path: ../data/raw/GTSRB/converted
     val_split: 0.8
-    concepts_file: /vol/home-vol2/se/costajoa/Dokumente/data/raw/GTSRB/concepts/concepts_per_class.csv
+    concepts_file: ../data/raw/GTSRB/concepts/concepts_per_class.csv
+    freeze_concept_predictor: False
+    concept_predictor_file: null
 concept_predictor:
     lr: 0.001
     epochs: 2
@@ -22,7 +24,7 @@ concept_predictor:
     early_stopping_patience: 15
     momentum: 0.9
     weight_decay: 5e-4
-    checkpoint_dir: "/vol/home-vol2/se/costajoa/Dokumente/trainFuzzy/files/models"
+    checkpoint_dir: "../files/models"
     criterion: bce_with_logits
     optimizer: sgd
     scheduler: cosine_annealing
@@ -42,7 +44,7 @@ label_predictor:
     early_stopping_patience: 15
     momentum: 0.9
     weight_decay: 5e-4
-    checkpoint_dir: "/vol/home-vol2/se/costajoa/Dokumente/trainFuzzy/files/models"
+    checkpoint_dir: "../files/models"
     criterion: cross_entropy
     optimizer: adam
     scheduler: reduce_on_plateau
