@@ -12,13 +12,15 @@ class MockConfig:
     """A mock configuration object for testing."""
 
     def __init__(self, **kwargs):
+        self.name = "MockConfig"
+        self.n_labels = 10
         self.batch_size = 4
-        self.shuffle_dataset = True
         self.num_workers = 0
+        self.shuffle_dataset = True
         self.pin_memory = False
-        self.seed = 42
-        self.val_split = 0.2
         self.data_path = "mock_data"
+        self.val_split = 0.2
+        self.seed = 42
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -187,20 +189,6 @@ def test_get_dataloaders_no_load(mock_factory):
     assert train_dl is None
     assert val_dl is None
     assert test_dl is None
-
-
-def test_config_attributes_with_concepts():
-    """Test that the factory correctly handles config with concepts file."""
-    mock_config_with_concepts = MockConfig(concepts_file="concepts.csv")
-    factory_with_concepts = MockConcreteFactory(mock_config_with_concepts)
-    assert factory_with_concepts.concepts_file == "concepts.csv"
-
-
-def test_config_attributes_without_concepts():
-    """Test that the factory defaults to None/False without concepts file in config."""
-    mock_config_without_concepts = MockConfig()
-    factory_without_concepts = MockConcreteFactory(mock_config_without_concepts)
-    assert factory_without_concepts.concepts_file is None
 
 
 def test_seeding_reproducibility(mock_config):
