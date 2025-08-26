@@ -34,3 +34,5 @@ class CBMTrainerConfig:
         self.dataset.resolve()
         self.concept_predictor.resolve()
         self.label_predictor.resolve()
+
+        self.concept_predictor.fuzzy_loss.concept_map = self.dataset.get_concept_map()
