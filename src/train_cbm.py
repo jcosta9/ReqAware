@@ -37,12 +37,12 @@ def main():
 
     # # Train
     trainer = CBMTrainer(
-                config=config,
-                model=model,
-                train_loader=train_loader, 
-                val_loader=val_loader, 
-                test_loader=test_loader
-            )
+        config=config,
+        model=model,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
+    )
     trainer.train()
 
     # return dataset_factory, model, trainer

@@ -32,7 +32,9 @@ class CBMSequentialEfficientNetFCN(nn.Module):
 
         self.config = config
 
-        self.concept_predictor = EfficientNetv2(n_labels=self.config.dataset.n_concepts, device=self.config.device)
+        self.concept_predictor = EfficientNetv2(
+            n_labels=self.config.dataset.n_concepts, device=self.config.device
+        )
 
         self.label_predictor = FCSoftmax(
             input_dim=self.config.dataset.n_concepts,

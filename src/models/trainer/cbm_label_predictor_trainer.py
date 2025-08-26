@@ -17,26 +17,22 @@ class CBMLabelPredictorTrainer(BaseTrainer):
     Inherits from BaseTrainer and implements the training logic.
     """
 
-    def __init__(self, 
-                config,
-                model, 
-                concept_predictor,
-                train_loader, 
-                val_loader, 
-                test_loader,
-                log_dir=None, 
-                device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-                ):
-        
-        super().__init__(config,
-                            model, 
-                            train_loader, 
-                            val_loader, 
-                            test_loader,
-                            log_dir, 
-                            device
-                        )
-        
+    def __init__(
+        self,
+        config,
+        model,
+        concept_predictor,
+        train_loader,
+        val_loader,
+        test_loader,
+        log_dir=None,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    ):
+
+        super().__init__(
+            config, model, train_loader, val_loader, test_loader, log_dir, device
+        )
+
         self.concept_predictor = concept_predictor.to(self.device)
         self.concepts_threshold = 0.5
 
@@ -85,7 +81,9 @@ class CBMLabelPredictorTrainer(BaseTrainer):
                     "[MODEL] Compute Label predictor output using input images"
                 )
                 pred_concepts = self.concept_predictor(inputs)
-                pred_concepts = (torch.sigmoid(pred_concepts) > self.concepts_threshold).float()  #TODO: Threshold can be a config parameter
+                pred_concepts = (
+                    torch.sigmoid(pred_concepts) > self.concepts_threshold
+                ).float()  # TODO: Threshold can be a config parameter
 
                 pred_labels = self.model(pred_concepts)
                 loss = self.criterion(pred_labels, labels)
@@ -149,7 +147,9 @@ class CBMLabelPredictorTrainer(BaseTrainer):
 
                 # Evaluating label_predictor on predicted concepts
                 pred_concepts = self.concept_predictor(inputs)
-                pred_concepts = (torch.sigmoid(pred_concepts) > self.concepts_threshold).float()  #TODO: Threshold can be a config parameter
+                pred_concepts = (
+                    torch.sigmoid(pred_concepts) > self.concepts_threshold
+                ).float()  # TODO: Threshold can be a config parameter
 
                 pred_labels = self.model(pred_concepts)
 
@@ -161,8 +161,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
                 correct, total = self.compute_accuracy(pred_labels, labels)
                 running_correct += correct
                 running_total += total
-                
-                
+
                 y_true.extend(labels.cpu().numpy())
                 y_pred.extend(pred_labels.cpu().numpy())
 

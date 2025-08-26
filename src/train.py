@@ -37,14 +37,14 @@ def main():
 
     # Train
     trained_model, test_accuracy = StandardTrainer(
-                                        config=config.training,
-                                        model=model, 
-                                        train_loader=train_loader, 
-                                        val_loader=val_loader, 
-                                        test_loader=test_loader, 
-                                        log_dir=config.log_dir,
-                                        device=config.device
-                                    ).train()
+        config=config.training,
+        model=model,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
+        log_dir=config.log_dir,
+        device=config.device,
+    ).train()
 
     return dataset_factory, trained_model
 

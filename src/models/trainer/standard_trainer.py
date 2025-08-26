@@ -17,24 +17,20 @@ class StandardTrainer(BaseTrainer):
     Inherits from BaseTrainer and implements the training logic.
     """
 
-    def __init__(self, 
-                config,
-                model, 
-                train_loader, 
-                val_loader, 
-                test_loader,
-                log_dir=None, 
-                device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-                ):
-        
-        super().__init__(config,
-                            model, 
-                            train_loader, 
-                            val_loader, 
-                            test_loader,
-                            log_dir, 
-                            device
-                        )
+    def __init__(
+        self,
+        config,
+        model,
+        train_loader,
+        val_loader,
+        test_loader,
+        log_dir=None,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    ):
+
+        super().__init__(
+            config, model, train_loader, val_loader, test_loader, log_dir, device
+        )
 
     def _train_epoch(self, epoch):
         """

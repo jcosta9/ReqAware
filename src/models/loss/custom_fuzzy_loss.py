@@ -1,12 +1,13 @@
 import torch
 from torch import nn
 
+
 class CustomFuzzyLoss(nn.Module):
     def __init__(self, config, current_loss_fn):
         super().__init__()
         self.config = config
         self.current_loss_fn = current_loss_fn
-        self.fuzzy_lambda = config.fuzzy_lambda #TODO: make it learnable
+        self.fuzzy_lambda = config.fuzzy_lambda  # TODO: make it learnable
 
         for rule_fn in self.config.custom_rules:
             print(f"Using custom fuzzy rule: {rule_fn.__name__}")

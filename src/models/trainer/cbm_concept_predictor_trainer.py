@@ -10,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from models.loss import CustomFuzzyLoss
 from .abstract import BaseTrainer
 
+
 class CBMConceptPredictorTrainer(BaseTrainer):
     """
     Standard training loop for a model with training and validation phases.
@@ -17,26 +18,24 @@ class CBMConceptPredictorTrainer(BaseTrainer):
     Inherits from BaseTrainer and implements the training logic.
     """
 
-    def __init__(self, 
-                config,
-                model, 
-                train_loader, 
-                val_loader, 
-                test_loader,
-                log_dir=None, 
-                device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-                ):
-        
-        super().__init__(config,
-                            model, 
-                            train_loader, 
-                            val_loader, 
-                            test_loader,
-                            log_dir, 
-                            device
-                        )
-        
-        self.criterion = CustomFuzzyLoss(config=self.config.fuzzy_loss, current_loss_fn=self.criterion)
+    def __init__(
+        self,
+        config,
+        model,
+        train_loader,
+        val_loader,
+        test_loader,
+        log_dir=None,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    ):
+
+        super().__init__(
+            config, model, train_loader, val_loader, test_loader, log_dir, device
+        )
+
+        self.criterion = CustomFuzzyLoss(
+            config=self.config.fuzzy_loss, current_loss_fn=self.criterion
+        )
 
     def compute_accuracy(self, outputs, concepts):
         """
@@ -50,7 +49,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             float: Accuracy of the predictions.
         """
         probs = torch.sigmoid(outputs)
-        predicted = (probs > 0.5).long()  #TODO: Threshold can be a config parameter
+        predicted = (probs > 0.5).long()  # TODO: Threshold can be a config parameter
         correct = (predicted == concepts).sum().item()
         total = concepts.size(0) * concepts.size(1)
         return predicted, correct, total
@@ -154,8 +153,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 predicted, correct, total = self.compute_accuracy(outputs, concepts)
                 running_correct += correct
                 running_total += total
-                
-                
+
                 y_true.extend(concepts.cpu().numpy())
                 y_pred.extend(predicted.cpu().numpy())
 

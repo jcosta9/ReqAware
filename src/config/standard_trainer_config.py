@@ -25,6 +25,10 @@ class StandardTrainerConfig:
     training: TrainingConfig = field(default_factory=TrainingConfig)
 
     def resolve(self):
-        self.device = f"cuda:{self.device_no}" if self.device == "cuda" and torch.cuda.is_available() else "cpu"
+        self.device = (
+            f"cuda:{self.device_no}"
+            if self.device == "cuda" and torch.cuda.is_available()
+            else "cpu"
+        )
         self.dataset.resolve()
         self.training.resolve()

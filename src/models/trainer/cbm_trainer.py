@@ -4,14 +4,9 @@ from models.trainer.cbm_concept_predictor_trainer import CBMConceptPredictorTrai
 from models.trainer.cbm_label_predictor_trainer import CBMLabelPredictorTrainer
 from models.trainer.standard_trainer import StandardTrainer
 
+
 class CBMTrainer:
-    def __init__(self, 
-            config,
-            model,
-            train_loader, 
-            val_loader, 
-            test_loader
-    ):
+    def __init__(self, config, model, train_loader, val_loader, test_loader):
         """
         Initialize the CBMTrainer with model, data loaders, and training configuration.
 
@@ -29,46 +24,43 @@ class CBMTrainer:
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
-        
+
         if not hasattr(self.model, "concept_predictor"):
             raise ValueError("CBM Model must have a 'concept_predictor' attribute.")
         if not hasattr(self.model, "label_predictor"):
             raise ValueError("CBM Model must have a 'label_predictor' attribute.")
 
-
-
         self.concept_predictor = model.concept_predictor.to(self.device)
         self.label_predictor = model.label_predictor.to(self.device)
 
         self.concept_predictor_trainer = CBMConceptPredictorTrainer(
-                                        config=config.concept_predictor,
-                                        model=self.concept_predictor, 
-                                        train_loader=train_loader, 
-                                        val_loader=val_loader, 
-                                        test_loader=test_loader, 
-                                        log_dir=config.log_dir,
-                                        device=config.device
-                                    )
-        
+            config=config.concept_predictor,
+            model=self.concept_predictor,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            test_loader=test_loader,
+            log_dir=config.log_dir,
+            device=config.device,
+        )
+
         self.label_predictor_trainer = CBMLabelPredictorTrainer(
-                                        config=config.label_predictor,
-                                        model=self.label_predictor, 
-                                        concept_predictor=self.concept_predictor,
-                                        train_loader=train_loader, 
-                                        val_loader=val_loader, 
-                                        test_loader=test_loader, 
-                                        log_dir=config.log_dir,
-                                        device=config.device
-                                    )
-        
+            config=config.label_predictor,
+            model=self.label_predictor,
+            concept_predictor=self.concept_predictor,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            test_loader=test_loader,
+            log_dir=config.log_dir,
+            device=config.device,
+        )
+
     def train(self):
         """
         Train the concept and label predictors using the training data.
         """
-        #TODO: check if concept predictor should be trained first
+        # TODO: check if concept predictor should be trained first
         # Train concept predictor
-        print("Training concept predictor...")
+        print("\n#### Training concept predictor...")
         self.concept_predictor = self.concept_predictor_trainer.train()
-        print("Training label predictor...")
+        print("\n\n#### Training label predictor...")
         self.label_predictor = self.label_predictor_trainer.train()
-        

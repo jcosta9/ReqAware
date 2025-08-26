@@ -36,14 +36,15 @@ class BaseTrainer(ABC):
         best_val_accuracy (float): Best recorded validation accuracy.
     """
 
-    def __init__(self, 
-    config,
-    model, 
-    train_loader, 
-    val_loader, 
-    test_loader,
-    log_dir=None, 
-    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    def __init__(
+        self,
+        config,
+        model,
+        train_loader,
+        val_loader,
+        test_loader,
+        log_dir=None,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
         """
         Initialize the Trainer with model, data loaders, and training configuration.
@@ -164,7 +165,7 @@ class BaseTrainer(ABC):
         self.load_best_model()
         _, test_accuracy = self.test(self.test_loader)
         print(f"🎯 Final Test Accuracy: {test_accuracy:.4f}")
-        
+
         return self.model, test_accuracy
 
     @abstractmethod
