@@ -3,6 +3,7 @@ from typing import Optional
 
 from pathlib import Path
 from omegaconf import MISSING
+import pandas as pd
 
 from data_access.registry import DATASET_FACTORY_REGISTRY
 
@@ -48,6 +49,14 @@ class ConceptDatasetConfig(DatasetConfig):
     n_concepts: int = 43  # Example for GTSRB, adjust as needed
     concepts_file: Optional[Path] = None
 
+    def get_concept_map(self):
+        if hasattr(self, "concept_map"):
+            return self.concept_map
+        else:
+            raise AttributeError(
+                "Concept map not loaded. Ensure concepts_file is provided and resolved."
+            )
+
     def extra_resolve(self):
         super().extra_resolve()
 
@@ -58,3 +67,9 @@ class ConceptDatasetConfig(DatasetConfig):
 
         if self.n_concepts <= 0:
             raise ValueError("Number of concepts must be a positive integer")
+
+        if self.concepts_file:
+            self.concepts = pd.read_csv(self.concepts_file)
+            self.concept_map = {
+                col: idx for idx, col in enumerate(self.concepts.columns[2:])
+            }  # Skip non-concept columns if any
