@@ -23,7 +23,9 @@ def main():
     config = load_config(Path("files/configs/cifar10_config.yaml"))
 
     # Dataset
-    dataset_factory = config.dataset.factory(config).set_dataloaders()
+    dataset_factory = config.dataset.factory(
+        seed=config.seed, config=config.dataset
+    ).set_dataloaders()
 
     if dataset_factory is None:
         return

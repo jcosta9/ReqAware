@@ -35,13 +35,13 @@ CIFAR10_test_transform = transforms.Compose(
 class CIFAR10Factory(DatasetFactory):
     """Factory for generating CIFAR10 data."""
 
-    def __init__(self, config):
+    def __init__(self, config, seed=42):
         """Builder method for CIFAR10Factory.
 
         Args:
             config (Defaults): Configuration file with parameters.
         """
-        super().__init__(config)
+        super().__init__(config=config, seed=seed)
 
     def load_datasets(
         self,

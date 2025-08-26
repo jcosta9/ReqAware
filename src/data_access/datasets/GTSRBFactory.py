@@ -37,13 +37,13 @@ GTSRB_basic_transform = transforms.Compose(
 class GTSRBFactory(DatasetFactory):
     """Factory for generating GTSRB data."""
 
-    def __init__(self, config):
+    def __init__(self, config, seed=42):
         """Builder method for GTSRBFactory.
 
         Args:
             config (Defaults): Configuration file with parameters.
         """
-        super().__init__(config)
+        super().__init__(config=config, seed=seed)
 
     def load_datasets(
         self,

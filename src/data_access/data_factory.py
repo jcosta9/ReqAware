@@ -16,14 +16,14 @@ def seed_worker(worker_id):
 class DatasetFactory(ABC):
     """abstract factory for datasets."""
 
-    def __init__(self, config):
+    def __init__(self, config, seed=42):
         """Construct the DatasetFactory.
 
         Args:
             config: configuration file
         """
-        self.seed = config.seed
-        self.config = config.dataset
+        self.seed = seed
+        self.config = config
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
