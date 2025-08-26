@@ -1,6 +1,7 @@
 # Makefile for managing project tasks
+ARGS ?= ""
 
-.PHONY: test lint format clean
+.PHONY: test lint format clean train train-cbm
 
 # Run tests
 test:
@@ -22,4 +23,7 @@ clean:
 	find . -type f -name "*.pyc" -delete
 
 train:
-	python src/train.py
+	python src/train.py $(ARGS)
+
+train-cbm:
+	python src/train_cbm.py $(ARGS)
