@@ -33,9 +33,6 @@ class DatasetFactory(ABC):
         self.datasets_loaded = False
         self.dataloaders_set = False
 
-        # For concept aware datasets
-        self.concepts_file = self.config.concepts_file
-
     @abstractmethod
     def load_datasets(self):
         """Loads datasets for training/testing models."""
