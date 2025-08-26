@@ -18,11 +18,13 @@ from models.registries import (
 class StandardTrainerConfig:
     seed: int = 42
     print_freq: int = 30
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    device: str = "cuda"
+    device_no: int = 0
     log_dir: Path = "runs/default"
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
 
     def resolve(self):
+        self.device = f"cuda:{self.device_no}" if self.device == "cuda" and torch.cuda.is_available() else "cpu"
         self.dataset.resolve()
         self.training.resolve()

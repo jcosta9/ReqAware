@@ -1,5 +1,6 @@
 seed: 42
 device: cuda
+device_no: 1
 print_freq: 30
 log_dir: runs/default
 dataset:
