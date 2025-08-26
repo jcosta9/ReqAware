@@ -24,7 +24,7 @@ class CustomFuzzyLoss(nn.Module):
         # Calculate total fuzzy loss by iterating through active rules
         total_fuzzy_loss = torch.tensor(0.0, device=y_pred.device)
         for rule_fn in self.config.custom_rules:
-            rule_loss = rule_fn(y_pred, y_true)
+            rule_loss = rule_fn(y_pred, y_true, self.config.concept_map)
             total_fuzzy_loss += rule_loss
 
         # Combine the losses
