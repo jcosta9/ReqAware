@@ -36,7 +36,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                             device
                         )
         
-        self.criterion = CustomFuzzyLoss(self.config.criterion)
+        self.criterion = CustomFuzzyLoss(config=self.config.fuzzy_loss, current_loss_fn=self.criterion)
 
     def compute_accuracy(self, outputs, concepts):
         """
