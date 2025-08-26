@@ -14,8 +14,6 @@ dataset:
     data_path: /vol/home-vol2/se/costajoa/Dokumente/data/raw/GTSRB/converted
     val_split: 0.8
     concepts_file: /vol/home-vol2/se/costajoa/Dokumente/data/raw/GTSRB/concepts/concepts_per_class.csv
-    freeze_concept_predictor: False
-    concept_predictor_file: null
 concept_predictor:
     lr: 0.001
     epochs: 2

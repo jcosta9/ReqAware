@@ -47,8 +47,6 @@ class DatasetConfig:
 class ConceptDatasetConfig(DatasetConfig):
     n_concepts: int = 43  # Example for GTSRB, adjust as needed
     concepts_file: Optional[Path] = None
-    freeze_concept_predictor: bool = False
-    concept_predictor_file: Optional[Path] = None
 
     def extra_resolve(self):
         super().extra_resolve()
@@ -60,13 +58,3 @@ class ConceptDatasetConfig(DatasetConfig):
 
         if self.n_concepts <= 0:
             raise ValueError("Number of concepts must be a positive integer")
-
-        if self.freeze_concept_predictor and not self.concept_predictor_file:
-            raise ValueError(
-                "Concept predictor file must be specified if freezing the predictor"
-            )
-
-        if self.concept_predictor_file and not self.concept_predictor_file.exists():
-            raise FileNotFoundError(
-                f"Concept predictor file {self.concept_predictor_file} does not exist"
-            )
