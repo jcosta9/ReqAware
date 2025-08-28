@@ -11,7 +11,7 @@ class GodelTConorm(Tconorm):
     
 class GodelEAggregation(Aggregation):
     def forward(self, *inputs) -> torch.tensor:
-        torch.max(inputs)
+        return torch.max(inputs)
 
 class GodelAAggreation(Aggregation):
     def forward(self, *inputs) -> torch.tensor:
