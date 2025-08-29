@@ -50,33 +50,23 @@ class ExactlyOneShape(FuzzyLoss):
         # Isolate the concept probabilities we're working with
         concept_probs = y_pred[:, self.shape_indices]
         batch_size, num_concepts = concept_probs.shape
-        batch_losses =[]
+        batch_losses = []
 
-        for pred in concept_probs:
-            tnorm_values_from_loop = []
+        for i in range(num_concepts):
+            # The concept we are focusing on in this iteration
+            other_concepts = torch.cat([concept_probs[:,:i], concept_probs[:,i+1:]], dim=1)
+            # Negate them
+            negated_other_concepts = 1.0 - other_concepts
+            # Apply the universal aggregation (e.g., min) over the "other" concepts
+            all_aggregation = self.a_aggregation(negated_other_concepts)
+            # Apply the t-norm between the current concept and the aggregation
+            t_norm = self.t_norm(concept_probs[:,i], all_aggregation)
+            # Add the result for this iteration to our list
+            batch_losses.append(t_norm.unsqueeze(1))
 
-            for i in range(num_concepts):
-                # The concept we are focusing on in this iteration
-                current_concept = pred[i]
-                other_concepts = torch.cat([pred[:i], pred[i+1:]])
-                print(f"Other concepts: {other_concepts}")
-                # Negate them
-                negated_other_concepts = 1.0 - other_concepts
-                print(f"negated others: {negated_other_concepts}")
-                # Apply the universal aggregation (e.g., min) over the "other" concepts
-                all_aggregation = self.a_aggregation(negated_other_concepts)
-                print(f"all aggregation: {all_aggregation}")
-
-                # Apply the t-norm between the current concept and the aggregation
-                t_norm = self.t_norm(current_concept, all_aggregation)
-                print(f"tnorm {t_norm}")
-                # Add the result for this iteration to our list
-                tnorm_values_from_loop.append(t_norm)
-
-            # The result has shape (num_concepts, batch_size).
-            exist_agg = self.e_aggregation(torch.tensor(tnorm_values_from_loop))
-            batch_losses.append(exist_agg)
+        batch_losses =  torch.cat(batch_losses, dim=1)
+        exist_agg = self.e_aggregation(batch_losses)
 
         if y_pred.dim() == 1:
             batch_losses = batch_losses.squezze()
-        return 1 - torch.tensor(batch_losses)
+        return 1 - exist_agg
