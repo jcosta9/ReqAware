@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from fuzzy_transformations import GodelTNorm, GodelAAggreation, GodelEAggregation
+from .abstract.fuzzy_loss import FuzzyLoss
 
 
 class CustomFuzzyLoss(nn.Module):
@@ -35,33 +35,48 @@ class CustomFuzzyLoss(nn.Module):
         # total_loss = standard_loss + self.fuzzy_lambda * fuzzy_loss
         return total_loss
 
-class ExactlyOneShapeGodel(nn.Module):
-    """A loss function resembling that a traffic sign has exactly one shape in the GTSRB using the Godel t-norm transformation."""
-    def __init__(self, config, current_loss_fn, shape_indices):
-        super().__init__()
-        self.config = config
-        self.current_loss_fn = current_loss_fn
-        self.fuzzy_lambda = config.fuzzy_lambda
-        self.shape_concept_indices = shape_indices
+class ExactlyOneShape(FuzzyLoss):
+    def __init__(self, t_norm, t_conorm, implication, e_aggregation, a_aggregation, shape_indices):
+        super().__init__(t_norm, t_conorm, implication, e_aggregation, a_aggregation)
+        self.shape_indices = shape_indices
 
-        for rule_fn in self.config.custom_rules:
-            print(f"Using custom fuzzy rule: {rule_fn.__name__}")
-    
+    def forward(self, y_pred: torch.tensor) -> torch.tensor:
+        """Collects t-norm values using an explicit for loop."""
 
-    def forward(self, y_pred: torch.tensor, y_true: torch.tensor) -> torch.tensor:
-        """Implementation of the exactly one shape loss using the Godel t-norm"""
-        standard_loss = self.current_loss_fn(y_pred, y_true)
-        exist_aggregation = torch.tensor(device=self.config.device + ":" + self.config.device_no)
-        all_tnorm_values = []
-        for i in range(len(self.shape_concept_indices)):
-            # calculating the inner most t-norm aggreation where the shapes are unequal: (∀c): min_{j!=i}(1 - prob_j(c))
-            inner_most_probs = torch.cat([y_pred[:, :i], y_pred[:, i+1:]], dim=1)
-            inner_most_values = 1 - inner_most_probs
-            inner_most_tnorm = GodelAAggreation(inner_most_values)
-            # calculating the t-norm between the shape i and the innermost aggregation
-            tnorm_value = GodelTNorm(y_pred[i] , inner_most_tnorm)
-            all_tnorm_values.append(tnorm_value)
+        # tricking around to fix batch size
+        if y_pred.dim() == 1:
+            y_pred = y_pred.unsqueeze(0)
         
-        # final exist aggregation step
-        fuzzy_loss = 1 - GodelEAggregation(torch.tensor(all_tnorm_values))
-        return standard_loss + self.fuzzy_lambda * fuzzy_loss
+        # Isolate the concept probabilities we're working with
+        concept_probs = y_pred[:, self.shape_indices]
+        batch_size, num_concepts = concept_probs.shape
+        batch_losses =[]
+
+        for pred in concept_probs:
+            tnorm_values_from_loop = []
+
+            for i in range(num_concepts):
+                # The concept we are focusing on in this iteration
+                current_concept = pred[i]
+                other_concepts = torch.cat([pred[:i], pred[i+1:]])
+                print(f"Other concepts: {other_concepts}")
+                # Negate them
+                negated_other_concepts = 1.0 - other_concepts
+                print(f"negated others: {negated_other_concepts}")
+                # Apply the universal aggregation (e.g., min) over the "other" concepts
+                all_aggregation = self.a_aggregation(negated_other_concepts)
+                print(f"all aggregation: {all_aggregation}")
+
+                # Apply the t-norm between the current concept and the aggregation
+                t_norm = self.t_norm(current_concept, all_aggregation)
+                print(f"tnorm {t_norm}")
+                # Add the result for this iteration to our list
+                tnorm_values_from_loop.append(t_norm)
+
+            # The result has shape (num_concepts, batch_size).
+            exist_agg = self.e_aggregation(torch.tensor(tnorm_values_from_loop))
+            batch_losses.append(exist_agg)
+
+        if y_pred.dim() == 1:
+            batch_losses = batch_losses.squezze()
+        return 1 - torch.tensor(batch_losses)
