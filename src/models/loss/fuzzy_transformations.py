@@ -1,4 +1,4 @@
-from abstract.fuzzy_transformation import Tnorm, Tconorm, Implication, Aggregation
+from .abstract.fuzzy_transformation import Tnorm, Tconorm, Implication, Aggregation
 import torch
 
 class GodelTNorm(Tnorm):
@@ -10,9 +10,21 @@ class GodelTConorm(Tconorm):
         return torch.max(a, b)
     
 class GodelEAggregation(Aggregation):
-    def forward(self, *inputs) -> torch.tensor:
-        return torch.max(inputs)
-
-class GodelAAggreation(Aggregation):
-    def forward(self, *inputs) -> torch.tensor:
-        return torch.min(inputs)
+    def forward(self, inputs: torch.tensor) -> torch.tensor:
+        if inputs.dim() == 2:
+            agg, _ = torch.max(inputs, dim=1)
+        elif inputs.dim() == 1:
+            agg = torch.max(inputs)
+        else:
+            raise ValueError("Behaiviour for more dims not defined.")
+        return agg
+    
+class GodelAAggregation(Aggregation):
+    def forward(self, inputs:torch.tensor) -> torch.tensor:
+        if inputs.dim() == 2:
+            agg, _ = torch.min(inputs, dim=1)
+        elif inputs.dim() == 1:
+            agg = torch.min(inputs)
+        else:
+            raise ValueError("Behaiviour for more dims not defined.")
+        return agg
