@@ -181,6 +181,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
                 running_total += total
 
                 y_true.extend(labels.cpu().numpy())
+                _, pred_labels = torch.max(pred_labels, 1)
                 y_pred.extend(pred_labels.cpu().numpy())
 
         accuracy = running_correct / running_total
