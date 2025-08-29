@@ -72,6 +72,8 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         STEPS = len(self.train_loader)
         global_step_base = epoch * STEPS
 
+        self.writer.add_scalar('Learning Rate/Concept_Predictor', self.optimizer.param_groups[0]['lr'], epoch)
+
         with tqdm.trange(STEPS) as progress:
             for batch_idx, (idx, inputs, (concepts, _)) in enumerate(self.train_loader):
                 inputs = inputs.to(self.device)
@@ -178,10 +180,9 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         y_pred = np.array(y_pred)
 
         if mode == "test":
-            report = f"Labels: \n {classification_report(y_true, y_pred)}"
+            report = f"{classification_report(y_true, y_pred)}"
             logging.info(report)
             self.writer.add_text("Classification Report/Test", report, 0)
-            print(report)
             return None, accuracy
 
         avg_loss = loss / len(dataloader.dataset)
