@@ -84,7 +84,7 @@ class BaseTrainer(ABC):
 
         return self
 
-    def validate(self):
+    def validate(self, epoch):
         """
         Run a single validation epoch.
 
@@ -96,7 +96,7 @@ class BaseTrainer(ABC):
         Returns:
             float: Accuracy for this validation epoch.
         """
-        return self.test(dataloader=self.val_loader, mode="val")
+        return self.test(dataloader=self.val_loader, epoch=epoch, mode="val")
 
     def save_checkpoint(self, epoch, val_accuracy):
         """
@@ -151,7 +151,7 @@ class BaseTrainer(ABC):
             self._train_epoch(epoch)
             self.on_epoch_end(epoch, None)
 
-            val_loss, val_accuracy = self.validate()
+            val_loss, val_accuracy = self.validate(epoch=epoch)
             self.save_checkpoint(epoch, val_accuracy)
             self.scheduler.step(val_loss)
 
@@ -163,7 +163,7 @@ class BaseTrainer(ABC):
 
         print("Final test evaluation")
         self.load_best_model()
-        _, test_accuracy = self.test(self.test_loader)
+        _, test_accuracy = self.test(dataloader=self.test_loader, mode='test')
         print(f"🎯 Final Test Accuracy: {test_accuracy:.4f}")
 
         return self.model, test_accuracy
@@ -182,7 +182,7 @@ class BaseTrainer(ABC):
         pass
 
     @abstractmethod
-    def test(self, dataloader, mode="val"):
+    def test(self, dataloader, epoch=0, mode="val"):
         """
         Evaluate the model on the provided dataloader.
 
