@@ -1,4 +1,4 @@
-from .abstract.fuzzy_transformation import Tnorm, Tconorm, Implication, Aggregation
+from .abstract.fuzzy_transformation_abstract import Tnorm, Tconorm, Aggregation
 import torch
 
 class GodelTNorm(Tnorm):
