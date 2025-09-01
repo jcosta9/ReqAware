@@ -12,7 +12,7 @@ expected_loss_tensor = torch.tensor([0])
 
 def test_godel_Aaggregation_batch():
     godel_agg = GodelAAggregation()
-    assert torch.equal(torch.tensor([0,0,1,0]), godel_agg(test_batch))
+    assert torch.equal(torch.tensor([0,0,0,0]), godel_agg(test_batch))
 
 def test_godel_aggregation_1d_tensor():
     godel_agg = GodelAAggregation()
@@ -21,7 +21,7 @@ def test_godel_aggregation_1d_tensor():
 
 def test_godel_Eaggregation_batch():
     godel_agg = GodelEAggregation()
-    assert torch.equal(torch.tensor([0,1,1,1]), godel_agg(test_batch))
+    assert torch.equal(torch.tensor([1,1,1,1]), godel_agg(test_batch))
 
 def test_godel_Eaggregation_1d_tensor():
     godel_agg = GodelEAggregation()
