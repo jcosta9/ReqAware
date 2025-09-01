@@ -1,8 +1,6 @@
 import torch
-import pytest
-from torch import nn
 from models.loss.fuzzy_transformations import GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation
-from models.loss.custom_fuzzy_loss import ExactlyOneShape
+from models.loss.custom_rules import ExactlyOneShape
 
 # the relevant concept indices are the first 3
 test_batch = torch.tensor([[0,0,0,1],[1,0,0,1],[1,1,1,0],[0,1,1,0]])
@@ -47,7 +45,7 @@ def test_exactly_one_shape_godel():
     godel_t_conorm =  GodelTConorm()
     godel_e_agg = GodelEAggregation()
     godel_a_agg = GodelAAggregation()
-    loss = ExactlyOneShape(t_norm=godel_t_norm, t_conorm=godel_t_conorm, implication=None, e_aggregation=godel_e_agg, a_aggregation=godel_a_agg, shape_indices=[0,1,2])
+    loss = ExactlyOneShape(t_norm=godel_t_norm, t_conorm=godel_t_conorm, e_aggregation=godel_e_agg, a_aggregation=godel_a_agg, shape_indices=[0,1,2])
     assert torch.equal(loss(test_batch), expected_loss_batch)
 
 def test_exactly_one_shape_godel_vector():
@@ -55,5 +53,5 @@ def test_exactly_one_shape_godel_vector():
     godel_t_conorm =  GodelTConorm()
     godel_e_agg = GodelEAggregation()
     godel_a_agg = GodelAAggregation()
-    loss = ExactlyOneShape(t_norm=godel_t_norm, t_conorm=godel_t_conorm, implication=None, e_aggregation=godel_e_agg, a_aggregation=godel_a_agg, shape_indices=[0,1,2])
+    loss = ExactlyOneShape(t_norm=godel_t_norm, t_conorm=godel_t_conorm, e_aggregation=godel_e_agg, a_aggregation=godel_a_agg, shape_indices=[0,1,2])
     assert torch.equal(loss(test_tensor), expected_loss_tensor)
