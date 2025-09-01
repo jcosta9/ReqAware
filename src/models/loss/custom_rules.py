@@ -1,8 +1,9 @@
 import torch
 from .abstract.fuzzy_loss import FuzzyLoss
+from. abstract.fuzzy_transformation_abstract import Tnorm, Tconorm, Aggregation 
 
 class ExactlyOneShape(FuzzyLoss):
-    def __init__(self, t_norm, t_conorm, e_aggregation, a_aggregation, shape_indices):
+    def __init__(self, t_norm: Tnorm, t_conorm: Tconorm, e_aggregation: Aggregation, a_aggregation: Aggregation, shape_indices):
         super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
         self.shape_indices = shape_indices
 

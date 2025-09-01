@@ -20,10 +20,6 @@ class Tconorm(FuzzyTransformation):
     """Abstract class for all conjunctive 'or' fuzzy logic transformations, called t-conorm"""
     pass
 
-class Implication(FuzzyTransformation):
-    """Abstract class for all implication fuzzy logic transformations. Either derived from t-norm or t-conorm"""
-    pass
-
 class Aggregation(FuzzyTransformation):
     """Abstract class for all aggregation opperations in fuzzy logic"""
     pass
