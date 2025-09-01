@@ -10,7 +10,7 @@ class GodelTConorm(Tconorm):
         return torch.max(a, b)
     
 class GodelEAggregation(Aggregation):
-    def forward(self, inputs: torch.tensor) -> torch.tensor:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         if inputs.dim() == 2:
             agg, _ = torch.max(inputs, dim=1)
         elif inputs.dim() == 1:
@@ -20,7 +20,7 @@ class GodelEAggregation(Aggregation):
         return agg
     
 class GodelAAggregation(Aggregation):
-    def forward(self, inputs:torch.tensor) -> torch.tensor:
+    def forward(self, inputs:torch.Tensor) -> torch.Tensor:
         if inputs.dim() == 2:
             agg, _ = torch.min(inputs, dim=1)
         elif inputs.dim() == 1:

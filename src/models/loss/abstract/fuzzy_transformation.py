@@ -9,7 +9,7 @@ class FuzzyTransformation(nn.Module, ABC):
         super().__init__(*args, **kwargs)
 
     @abstractmethod
-    def forward(self, *inputs: torch.tensor) -> torch.tensor:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         pass
 
 class Tnorm(FuzzyTransformation):
