@@ -33,9 +33,21 @@ concept_predictor:
         eta_min: 0
     fuzzy_loss:
         use_fuzzy_loss: True
-        fuzzy_lambda: 0.5
-        custom_rules:
-            - c1_should_be_close_to_c2
+        # each rule can be added independetly with differnt transformaions and corresponding lambda
+        "rules": {
+            "exactly_one_shape": {
+                "class": "ExactlyOneShape",
+                "lambda": 0.5, 
+                "operators": {
+                    "t_norm": "godel_t_norm",
+                    "a_aggregation": "godel_a_aggregation",
+                    "e_aggregation": "godel_e_aggregation",
+                },
+                "params": {
+                    "shape_indices": [0, 1, 2, 3]
+                }
+            }
+        }
 label_predictor:
     lr: 0.001
     epochs: 2
