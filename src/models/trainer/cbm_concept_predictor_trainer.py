@@ -97,7 +97,10 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
                 # Log Batch loss: track loss on a per-batch basis.
                 self.writer.add_scalar('Loss/Train_Batch/Concept_Predictor', loss.item(), global_step)
-
+                if self.config.fuzzy_loss.use_fuzzy_loss:
+                    self.writer.add_scalar('Loss/Fuzzy_Total', self.criterion.last_fuzzy_loss.item(), global_step)
+                    for name, loss_val in self.criterion.last_individual_losses.items():
+                        self.writer.add_scalar(f'FuzzyLoss/{name}', loss_val.item(), global_step)
                 logging.debug("[MODEL] Progress bar")
                 progress.colour = "green"
                 progress.desc = (

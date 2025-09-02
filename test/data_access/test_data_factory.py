@@ -30,6 +30,7 @@ class MockDataset(Dataset):
 
     def __init__(self, length=100):
         self._length = length
+        self.concepts_file = None
 
     def __len__(self):
         return self._length
