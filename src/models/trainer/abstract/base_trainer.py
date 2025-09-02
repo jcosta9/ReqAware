@@ -163,7 +163,7 @@ class BaseTrainer(ABC):
 
         print("Final test evaluation")
         self.load_best_model()
-        _, test_accuracy = self.test(dataloader=self.test_loader, mode='test')
+        _, test_accuracy = self.test(dataloader=self.test_loader, mode="test")
         print(f"🎯 Final Test Accuracy: {test_accuracy:.4f}")
 
         return self.model, test_accuracy

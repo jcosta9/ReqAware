@@ -71,7 +71,11 @@ class CBMLabelPredictorTrainer(BaseTrainer):
         STEPS = len(self.train_loader)
         global_step_base = epoch * STEPS
 
-        self.writer.add_scalar('Learning Rate/Concept_Predictor', self.optimizer.param_groups[0]['lr'], epoch)
+        self.writer.add_scalar(
+            "Learning Rate/Concept_Predictor",
+            self.optimizer.param_groups[0]["lr"],
+            epoch,
+        )
 
         with tqdm.trange(STEPS) as progress:
             for batch_idx, (idx, inputs, (_, labels)) in enumerate(self.train_loader):
@@ -94,13 +98,15 @@ class CBMLabelPredictorTrainer(BaseTrainer):
                 loss = self.criterion(pred_labels, labels)
 
                 logging.debug("[MODEL] Compute gradient and do SGD step")
-                loss.backward()                    
-                
+                loss.backward()
+
                 self.optimizer.step()
                 running_loss += loss.item()  # * inputs.size(0)
 
                 # Log Batch loss: track loss on a per-batch basis.
-                self.writer.add_scalar('Loss/Train_Batch/Label_Predictor', loss.item(), global_step)
+                self.writer.add_scalar(
+                    "Loss/Train_Batch/Label_Predictor", loss.item(), global_step
+                )
 
                 logging.debug("[MODEL] Progress bar")
                 progress.colour = "green"
@@ -116,7 +122,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
                 correct, total = self.compute_accuracy(pred_labels, labels)
                 running_correct += correct
                 running_total += total
-            
+
             avg_loss = running_loss / STEPS
             accuracy = running_correct / running_total
 
@@ -125,11 +131,19 @@ class CBMLabelPredictorTrainer(BaseTrainer):
 
             # Log weight histograms
             for name, param in self.model.named_parameters():
-                if 'weight' in name or 'bias' in name:
-                    self.writer.add_histogram(f'Label_Predictor/{name}', param.clone().detach().cpu().numpy(), epoch)
+                if "weight" in name or "bias" in name:
+                    self.writer.add_histogram(
+                        f"Label_Predictor/{name}",
+                        param.clone().detach().cpu().numpy(),
+                        epoch,
+                    )
 
                 if param.grad is not None:
-                    self.writer.add_histogram(f'Label_Predictor/{name}_grad', param.grad.clone().detach().cpu().numpy(), epoch)
+                    self.writer.add_histogram(
+                        f"Label_Predictor/{name}_grad",
+                        param.grad.clone().detach().cpu().numpy(),
+                        epoch,
+                    )
 
         print(
             f"Train | Epoch: [{epoch + 1}/{self.config.epochs}] \
@@ -197,7 +211,11 @@ class CBMLabelPredictorTrainer(BaseTrainer):
 
         avg_loss = loss / len(dataloader.dataset)
 
-        self.writer.add_scalar(f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch)
-        self.writer.add_scalar(f"Accuracy/{mode.upper()}/Concept_Predictor", accuracy, epoch)
+        self.writer.add_scalar(
+            f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch
+        )
+        self.writer.add_scalar(
+            f"Accuracy/{mode.upper()}/Concept_Predictor", accuracy, epoch
+        )
 
         return avg_loss, accuracy
