@@ -41,6 +41,10 @@ class CustomFuzzyLoss(nn.Module):
         self.use_fuzzy_loss = config.get("use_fuzzy_loss", False)
         if self.use_fuzzy_loss:
             self._build_rules_from_config(config)
+        self.last_standard_loss = torch.tensor(0.0)
+        self.last_fuzzy_loss = torch.tensor(0.0)
+        # Optional: store individual rule losses too
+        self.last_individual_losses = {}
 
     def _build_rules_from_config(self, config: Dict):
         for rule_name, rule_config in config.get("rules", {}).items():
@@ -65,16 +69,18 @@ class CustomFuzzyLoss(nn.Module):
     
     def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
         standard_loss = self.current_loss_fn(y_pred, y_true)
-
-        if not self.use_fuzzy_loss or not self.fuzzy_rules:
-            return standard_loss
+        # updating the loss to make it visible outside the class
+        self.last_standard_loss = standard_loss.detach()
 
         total_fuzzy_loss = torch.tensor(0.0, device=y_pred.device)
+        self.last_individual_losses.clear()
         for rule_name, rule_module in self.fuzzy_rules.items():
             # Calculate the loss for one rule (already averaged over the batch)
             rule_loss = rule_module(y_pred).mean()
+            self.last_individual_losses[rule_name] = rule_loss.detach()
             
             # Weight it by its specific lambda and add to the total
             total_fuzzy_loss += self.lambdas[rule_name] * rule_loss
-
+        
+        self.last_fuzzy_loss = total_fuzzy_loss.detach()
         return standard_loss + total_fuzzy_loss

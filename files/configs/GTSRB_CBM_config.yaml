@@ -39,7 +39,9 @@ concept_predictor:
                 "class": "ExactlyOneShape",
                 "lambda": 0.5, 
                 "operators": {
+                    # these operators must always be defined‚
                     "t_norm": "godel_t_norm",
+                    't_conorm': 'godel_t_conorm',
                     "a_aggregation": "godel_a_aggregation",
                     "e_aggregation": "godel_e_aggregation",
                 },
