@@ -14,17 +14,15 @@ dataset:
     data_path: ../data/raw/GTSRB/converted
     val_split: 0.8
     concepts_file: ../data/raw/GTSRB/concepts/concepts_per_class.csv
-    freeze_concept_predictor: False
-    concept_predictor_file: null
 concept_predictor:
     lr: 0.001
-    epochs: 2
+    epochs: 1
     lr_step: 10
     lr_gamma: 0.5
     early_stopping_patience: 15
     momentum: 0.9
     weight_decay: 5e-4
-    checkpoint_dir: "../files/models"
+    checkpoint_dir: files/models
     criterion: bce_with_logits
     optimizer: sgd
     scheduler: cosine_annealing
@@ -33,23 +31,21 @@ concept_predictor:
         eta_min: 0
     fuzzy_loss:
         use_fuzzy_loss: True
-        # each rule can be added independetly with differnt transformaions and corresponding lambda
-        "rules": {
-            "exactly_one_shape": {
-                "class": "ExactlyOneShape",
-                "lambda": 0.5, 
-                "operators": {
-                    # these operators must always be defined‚
-                    "t_norm": "godel_t_norm",
-                    't_conorm': 'godel_t_conorm',
-                    "a_aggregation": "godel_a_aggregation",
-                    "e_aggregation": "godel_e_aggregation",
-                },
-                "params": {
-                    "shape_indices": [0, 1, 2, 3]
-                }
-            }
-        }
+        rules: 
+            exactly_one_shape:
+                rule: ExactlyOneShape
+                fuzzy_lambda: 0.5 
+                operators:
+                    t_norm: godel_t_norm
+                    t_conorm: godel_t_conorm
+                    a_aggregation: godel_a_aggregation
+                    e_aggregation: godel_e_aggregation
+                params: 
+                    shape_indices:
+                        - 0
+                        - 1
+                        - 2
+                        - 3
 label_predictor:
     lr: 0.001
     epochs: 2
@@ -58,12 +54,12 @@ label_predictor:
     early_stopping_patience: 15
     momentum: 0.9
     weight_decay: 5e-4
-    checkpoint_dir: "../files/models"
+    checkpoint_dir: files/models
     criterion: cross_entropy
     optimizer: adam
     scheduler: reduce_on_plateau
     scheduler_params: 
-        mode: "min"
+        mode: min
         factor: 0.5
         patience: 5
         min_lr: 0.00001

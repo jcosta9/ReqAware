@@ -4,11 +4,11 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 from omegaconf import MISSING
 
+from config.fuzzy_loss_config import FuzzyLossConfig
 from models.registries import (
     CRITERIONS_REGISTRY,
     OPTIMIZERS_REGISTRY,
     SCHEDULERS_REGISTRY,
-    CUSTOM_RULES_REGISTRY,
 )
 
 
@@ -54,38 +54,6 @@ class TrainingConfig:
         This can be overridden in subclasses if specific training require extra steps.
         """
         pass
-
-
-@dataclass
-class FuzzyLossConfig:
-    use_fuzzy_loss: bool = False
-    fuzzy_lambda: float = 0.5
-    custom_rules: Optional[list] = None
-
-    def resolve(self, parent_config):
-        if not (0 <= self.fuzzy_lambda <= 1):
-            raise ValueError("fuzzy_lambda must be between 0 and 1")
-        if self.use_fuzzy_loss and (
-            self.custom_rules is None or len(self.custom_rules) == 0
-        ):
-            raise ValueError(
-                "custom_rules must be provided when use_fuzzy_loss is True"
-            )
-        if not self.use_fuzzy_loss and (
-            self.custom_rules is not None and len(self.custom_rules) > 0
-        ):
-            raise ValueError(
-                "custom_rules should be None or empty when use_fuzzy_loss is False"
-            )
-
-        resolved_rules = []
-        for rule in self.custom_rules or []:
-            if rule not in CUSTOM_RULES_REGISTRY:
-                raise ValueError(
-                    f"Unknown custom rule {rule} in fuzzy_loss configuration"
-                )
-            resolved_rules.append(CUSTOM_RULES_REGISTRY[rule])
-        self.custom_rules = resolved_rules
 
 
 @dataclass
