@@ -27,11 +27,11 @@ class CustomFuzzyLoss(nn.Module):
         for rule_name, rule_config in config.rules.items():
             try:
                 self.fuzzy_rules[rule_name] = rule_config.rule(
-                    t_norm = rule_config.operators.t_norm,
-                    t_conorm = rule_config.operators.t_conorm,
-                    e_aggregation = rule_config.operators.e_aggregation,
-                    a_aggregation = rule_config.operators.a_aggregation,
-                    shape_indices = rule_config.params["shape_indices"] # TODO: generic rules should receive params
+                    t_norm=rule_config.operators.t_norm,
+                    t_conorm=rule_config.operators.t_conorm,
+                    e_aggregation=rule_config.operators.e_aggregation,
+                    a_aggregation=rule_config.operators.a_aggregation,
+                    params=rule_config.params
                 )
                 self.fuzzy_lambdas[rule_name] = rule_config.fuzzy_lambda
             except Exception as e:

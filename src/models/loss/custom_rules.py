@@ -10,10 +10,15 @@ class ExactlyOneShape(FuzzyLoss):
         t_conorm: Tconorm,
         e_aggregation: Aggregation,
         a_aggregation: Aggregation,
-        shape_indices,
+        params: dict,
     ):
         super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
-        self.shape_indices = shape_indices
+        
+        self.shape_indices = params.get("shape_indices", {})
+        if len(self.shape_indices) == 0:
+            raise ValueError(
+                "ExactlyOneShape fuzzy rule requires a list of shape indices as params"
+            )
 
     def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
         """Collects t-norm values using an explicit for loop."""
