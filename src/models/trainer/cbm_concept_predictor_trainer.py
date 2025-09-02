@@ -72,7 +72,11 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         STEPS = len(self.train_loader)
         global_step_base = epoch * STEPS
 
-        self.writer.add_scalar('Learning Rate/Concept_Predictor', self.optimizer.param_groups[0]['lr'], epoch)
+        self.writer.add_scalar(
+            "Learning Rate/Concept_Predictor",
+            self.optimizer.param_groups[0]["lr"],
+            epoch,
+        )
 
         with tqdm.trange(STEPS) as progress:
             for batch_idx, (idx, inputs, (concepts, _)) in enumerate(self.train_loader):
@@ -90,17 +94,25 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 loss = self.criterion(outputs, concepts)
 
                 logging.debug("[MODEL] Compute gradient and do SGD step")
-                loss.backward()                    
+                loss.backward()
 
                 self.optimizer.step()
                 running_loss += loss.item()  # * inputs.size(0)
 
                 # Log Batch loss: track loss on a per-batch basis.
-                self.writer.add_scalar('Loss/Train_Batch/Concept_Predictor', loss.item(), global_step)
+                self.writer.add_scalar(
+                    "Loss/Train_Batch/Concept_Predictor", loss.item(), global_step
+                )
                 if self.config.fuzzy_loss.use_fuzzy_loss:
-                    self.writer.add_scalar('Loss/Fuzzy_Total', self.criterion.last_fuzzy_loss.item(), global_step)
+                    self.writer.add_scalar(
+                        "Loss/Fuzzy_Total",
+                        self.criterion.last_fuzzy_loss.item(),
+                        global_step,
+                    )
                     for name, loss_val in self.criterion.last_individual_losses.items():
-                        self.writer.add_scalar(f'FuzzyLoss/{name}', loss_val.item(), global_step)
+                        self.writer.add_scalar(
+                            f"FuzzyLoss/{name}", loss_val.item(), global_step
+                        )
                 logging.debug("[MODEL] Progress bar")
                 progress.colour = "green"
                 progress.desc = (
@@ -111,7 +123,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 #     logging.debug(f"[MODEL] {progress.desc}")
                 #     print(f"[MODEL] {progress.desc}")
                 progress.update(1)
-                
+
                 _, correct, total = self.compute_accuracy(outputs, concepts)
                 running_correct += correct
                 running_total += total
@@ -121,15 +133,23 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
             self.writer.add_scalar("Loss/Train/Concept_Predictor", avg_loss, epoch)
             self.writer.add_scalar("Accuracy/Train/Concept_Predictor", accuracy, epoch)
-            
+
             # Log weight histograms
             for name, param in self.model.named_parameters():
-                if 'weight' in name or 'bias' in name:
-                    self.writer.add_histogram(f'Concept_Predictor/{name}', param.clone().detach().cpu().numpy(), epoch)
+                if "weight" in name or "bias" in name:
+                    self.writer.add_histogram(
+                        f"Concept_Predictor/{name}",
+                        param.clone().detach().cpu().numpy(),
+                        epoch,
+                    )
 
                 if param.grad is not None:
-                    self.writer.add_histogram(f'Concept_Predictor/{name}_grad', param.grad.clone().detach().cpu().numpy(), epoch)
-        
+                    self.writer.add_histogram(
+                        f"Concept_Predictor/{name}_grad",
+                        param.grad.clone().detach().cpu().numpy(),
+                        epoch,
+                    )
+
         print(
             f"Train | Epoch: [{epoch + 1}/{self.config.epochs}] \
                       Loss: {avg_loss:.4f}, Accuracy: {accuracy:.4f}"
@@ -190,7 +210,11 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         avg_loss = loss / len(dataloader.dataset)
 
-        self.writer.add_scalar(f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch)
-        self.writer.add_scalar(f"Accuracy/{mode.upper()}/Concept_Predictor", accuracy, epoch)
+        self.writer.add_scalar(
+            f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch
+        )
+        self.writer.add_scalar(
+            f"Accuracy/{mode.upper()}/Concept_Predictor", accuracy, epoch
+        )
 
         return avg_loss, accuracy
