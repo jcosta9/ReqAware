@@ -3,20 +3,32 @@ from models.loss.fuzzy_transformations import (
     GodelTConorm,
     GodelEAggregation,
     GodelAAggregation,
+    ProductTNorm,
+    ProductTConorm,
+    YagerTNorm,
+    YagerTConorm,
+    LogProductAAggregation,
+    GeneralizedMeanEAggregation
 )
 
 TNORM_REGISTRY = {
     "godel_t_norm": GodelTNorm,
+    "product_t_norm": ProductTNorm,
+    "yager_t_norm": YagerTNorm
 }
 
 TCONORM_REGISTRY = {
     "godel_t_conorm": GodelTConorm,
+    "product_t_conorm": ProductTConorm,
+    "yager_t_conorm": YagerTConorm
 }
 
 AAGGREGATION_REGISTRY = {
     "godel_a_aggregation": GodelAAggregation,
+    "log_product_a_aggregation": LogProductAAggregation,
 }
 
 EAGGREGATION_REGISTRY = {
     "godel_e_aggregation": GodelEAggregation,
+    "generalized_mean_e_aggregation": GeneralizedMeanEAggregation
 }
