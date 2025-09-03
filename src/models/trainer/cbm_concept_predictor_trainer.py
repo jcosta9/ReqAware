@@ -271,7 +271,9 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         if mode == "test":
             report = f"{classification_report(y_true, y_pred)}"
             logging.info(report)
-            self.writer.add_text("Classification Report/Test", report, 0)
+            self.writer.add_text(
+                "Classification Report/Concept_Predictor/Test", report, 0
+            )
             return None, accuracy
 
         avg_loss = loss / len(dataloader.dataset)
