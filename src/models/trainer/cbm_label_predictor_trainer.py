@@ -26,7 +26,6 @@ class CBMLabelPredictorTrainer(BaseTrainer):
         train_loader,
         val_loader,
         test_loader,
-        log_dir=None,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
 
@@ -37,7 +36,6 @@ class CBMLabelPredictorTrainer(BaseTrainer):
             train_loader,
             val_loader,
             test_loader,
-            log_dir,
             device,
         )
 

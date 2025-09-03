@@ -14,6 +14,7 @@ from models.registries import (
 
 @dataclass
 class TrainingConfig:
+    log_dir: Path = MISSING
     lr: float = 0.001
     epochs: int = 10
     lr_step: int = 10
@@ -29,7 +30,7 @@ class TrainingConfig:
     scheduler: str = "cosine_annealing"
     scheduler_params: Dict[str, Any] = field(default_factory=dict)
 
-    def resolve(self):
+    def resolve(self, output_dir:Path):
         if self.criterion in CRITERIONS_REGISTRY:
             self.criterion = CRITERIONS_REGISTRY[self.criterion]
         else:
@@ -45,13 +46,19 @@ class TrainingConfig:
         else:
             raise ValueError(f"Unknown scheduler {self.scheduler}")
 
-        if not self.checkpoint_dir.exists():
-            raise FileNotFoundError(f"Data path {self.checkpoint_dir} does not exist")
-
         if self.pretrained_weights and not self.pretrained_weights.exists():
             raise FileNotFoundError(
                 f"Data path {self.pretrained_weights} does not exist"
             )
+        
+        try:
+            self.log_dir = output_dir / self.log_dir
+            self.log_dir.mkdir(parents=True, exist_ok=True)
+
+            self.checkpoint_dir = output_dir / self.checkpoint_dir
+            self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
         self.extra_resolve()
 

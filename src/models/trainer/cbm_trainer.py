@@ -20,7 +20,6 @@ class CBMTrainer:
         self.model = model
         self.config = config
         self.device = config.device
-        self.log_dir = config.log_dir
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
@@ -40,7 +39,6 @@ class CBMTrainer:
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
-            log_dir=config.log_dir,
             device=config.device,
         )
 
@@ -52,7 +50,6 @@ class CBMTrainer:
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
-            log_dir=config.log_dir,
             device=config.device,
         )
 
