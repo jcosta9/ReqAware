@@ -20,9 +20,7 @@ GTSRB_transform = transforms.Compose(
     [
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
-        transforms.Normalize(
-            [0.3249, 0.3248, 0.3247], [0.2705, 0.2707, 0.2707]
-        ),  # obtained after loading and calculating
+        transforms.Normalize([0.3337, 0.3064, 0.3171], [0.2646, 0.2625, 0.2743]),
     ]
 )
 

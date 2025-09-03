@@ -30,7 +30,14 @@ class CBMConceptPredictorTrainer(BaseTrainer):
     ):
 
         super().__init__(
-            config, experiment_id, model, train_loader, val_loader, test_loader, log_dir, device
+            config,
+            experiment_id,
+            model,
+            train_loader,
+            val_loader,
+            test_loader,
+            log_dir,
+            device,
         )
 
         self.tag += "concept_predictor"
@@ -80,6 +87,16 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             epoch,
         )
 
+        if self.config.fuzzy_loss.use_fuzzy_loss:
+            logging.info(
+                f"[MODEL] Using Fuzzy Loss with rules: {list(self.criterion.fuzzy_rules.keys())}"
+            )
+            running_loss_standard = 0.0
+            running_loss_fuzzy = 0.0
+            running_loss_individual = {
+                name: 0.0 for name in self.criterion.fuzzy_rules.keys()
+            }
+
         with tqdm.trange(STEPS) as progress:
             for batch_idx, (idx, inputs, (concepts, _)) in enumerate(self.train_loader):
                 inputs = inputs.to(self.device)
@@ -101,19 +118,32 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 self.optimizer.step()
                 running_loss += loss.item()  # * inputs.size(0)
 
+                if self.config.fuzzy_loss.use_fuzzy_loss:
+                    running_loss_standard += self.criterion.last_standard_loss.item()
+                    running_loss_fuzzy += self.criterion.last_fuzzy_loss.item()
+                    for name, loss_val in self.criterion.last_individual_losses.items():
+                        running_loss_individual[name] += loss_val.item()
+
                 # Log Batch loss: track loss on a per-batch basis.
                 self.writer.add_scalar(
-                    "Loss/Train_Batch/Concept_Predictor", loss.item(), global_step
+                    "Loss/Train_batch/Concept_Predictor/Total", loss.item(), global_step
                 )
                 if self.config.fuzzy_loss.use_fuzzy_loss:
                     self.writer.add_scalar(
-                        "Loss/Fuzzy_Total",
+                        "Loss/Train_batch/Concept_Predictor/Fuzzy/Standard",
+                        self.criterion.last_standard_loss.item(),
+                        global_step,
+                    )
+                    self.writer.add_scalar(
+                        "Loss/Train_batch/Concept_Predictor/Fuzzy/Total",
                         self.criterion.last_fuzzy_loss.item(),
                         global_step,
                     )
                     for name, loss_val in self.criterion.last_individual_losses.items():
                         self.writer.add_scalar(
-                            f"FuzzyLoss/{name}", loss_val.item(), global_step
+                            f"Loss/Train_batch/Concept_Predictor/Fuzzy/{name}",
+                            loss_val.item(),
+                            global_step,
                         )
                 logging.debug("[MODEL] Progress bar")
                 progress.colour = "green"
@@ -132,25 +162,61 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
             avg_loss = running_loss / STEPS
             accuracy = running_correct / running_total
-
             self.writer.add_scalar("Loss/Train/Concept_Predictor", avg_loss, epoch)
             self.writer.add_scalar("Accuracy/Train/Concept_Predictor", accuracy, epoch)
 
-            # Log weight histograms
-            for name, param in self.model.named_parameters():
-                if "weight" in name or "bias" in name:
-                    self.writer.add_histogram(
-                        f"Concept_Predictor/{name}",
-                        param.clone().detach().cpu().numpy(),
+            if self.config.fuzzy_loss.use_fuzzy_loss:
+                avg_loss_standard = running_loss_standard / STEPS
+                avg_loss_fuzzy = running_loss_fuzzy / STEPS
+                self.writer.add_scalar(
+                    "Loss/Train/Concept_Predictor/Fuzzy/Standard",
+                    avg_loss_standard,
+                    epoch,
+                )
+                self.writer.add_scalar(
+                    "Loss/Train/Concept_Predictor/Fuzzy/Total",
+                    avg_loss_fuzzy,
+                    epoch,
+                )
+                for name, loss_val in running_loss_individual.items():
+                    self.writer.add_scalar(
+                        f"Loss/Train/Concept_Predictor/Fuzzy/{name}",
+                        loss_val / STEPS,
                         epoch,
                     )
 
+            for name, param in self.model.named_parameters():
+                # Log weights and biases
+                if "weight" in name or "bias" in name:
+                    # Check if the tensor has at least one non-zero element
+                    if param.data.numel() > 0 and len(torch.unique(param.grad)) > 1:
+                        try:
+                            self.writer.add_histogram(
+                                f"Concept_Predictor/{name}",
+                                param.clone().detach().cpu().numpy(),
+                                epoch,
+                            )
+                        except ValueError as e:
+                            print(param.clone().detach().cpu().numpy())
+                            logging.warning(
+                                f"Could not log histogram for {name} at epoch {epoch}: {e}"
+                            )
+
+                # Log gradients
                 if param.grad is not None:
-                    self.writer.add_histogram(
-                        f"Concept_Predictor/{name}_grad",
-                        param.grad.clone().detach().cpu().numpy(),
-                        epoch,
-                    )
+                    # Check if the gradient tensor has at least one non-zero element
+                    if param.grad.numel() > 0 and len(torch.unique(param.grad)) > 1:
+                        try:
+                            self.writer.add_histogram(
+                                f"Concept_Predictor/{name}_grad",
+                                param.grad.clone().detach().cpu().numpy(),
+                                epoch,
+                            )
+                        except ValueError as e:
+                            print(param.grad.clone().detach().cpu().numpy())
+                            logging.warning(
+                                f"Could not log gradient histogram for {name} at epoch {epoch}: {e}"
+                            )
 
         print(
             f"Train | Epoch: [{epoch + 1}/{self.config.epochs}] \

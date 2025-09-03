@@ -49,8 +49,10 @@ class TrainingConfig:
             raise FileNotFoundError(f"Data path {self.checkpoint_dir} does not exist")
 
         if self.pretrained_weights and not self.pretrained_weights.exists():
-            raise FileNotFoundError(f"Data path {self.pretrained_weights} does not exist")
-        
+            raise FileNotFoundError(
+                f"Data path {self.pretrained_weights} does not exist"
+            )
+
         self.extra_resolve()
 
     def extra_resolve(self):

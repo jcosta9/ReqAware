@@ -123,7 +123,10 @@ class BaseTrainer(ABC):
 
         if val_accuracy > self.best_val_accuracy:
             self.best_val_accuracy = val_accuracy  # TODO: log best_val_accuracy
-            path = self.config.checkpoint_dir / f"{self.experiment_id}_{self.tag}_best_model.pt"
+            path = (
+                self.config.checkpoint_dir
+                / f"{self.experiment_id}_{self.tag}_best_model.pt"
+            )
             torch.save(self.model.state_dict(), path)
             print(
                 f"✅ Best model saved at epoch {epoch+1} — Accuracy: {val_accuracy:.4f}"
@@ -139,7 +142,10 @@ class BaseTrainer(ABC):
         # TODO: Option for passing filename
         print("🔁 Loading best model...")
         self.model.load_state_dict(
-            torch.load(self.config.checkpoint_dir / f"{self.experiment_id}_{self.tag}_best_model.pt")
+            torch.load(
+                self.config.checkpoint_dir
+                / f"{self.experiment_id}_{self.tag}_best_model.pt"
+            )
         )
         return self.model
 
