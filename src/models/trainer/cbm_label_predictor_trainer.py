@@ -20,6 +20,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
     def __init__(
         self,
         config,
+        experiment_id,
         model,
         concept_predictor,
         train_loader,
@@ -30,9 +31,10 @@ class CBMLabelPredictorTrainer(BaseTrainer):
     ):
 
         super().__init__(
-            config, model, train_loader, val_loader, test_loader, log_dir, device
+            config, experiment_id, model, train_loader, val_loader, test_loader, log_dir, device
         )
 
+        self.tag += "label_predictor"
         self.concept_predictor = concept_predictor.to(self.device)
         self.concepts_threshold = 0.5
 

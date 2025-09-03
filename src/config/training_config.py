@@ -22,6 +22,8 @@ class TrainingConfig:
     momentum: float = 0.9
     weight_decay: float = 5e-4
     checkpoint_dir: Path = MISSING
+    freeze: bool = False
+    pretrained_weights: Optional[Path] = MISSING
     criterion: str = "cross_entropy"
     optimizer: str = "sgd"
     scheduler: str = "cosine_annealing"
@@ -46,6 +48,9 @@ class TrainingConfig:
         if not self.checkpoint_dir.exists():
             raise FileNotFoundError(f"Data path {self.checkpoint_dir} does not exist")
 
+        if self.pretrained_weights and not self.pretrained_weights.exists():
+            raise FileNotFoundError(f"Data path {self.pretrained_weights} does not exist")
+        
         self.extra_resolve()
 
     def extra_resolve(self):
@@ -59,15 +64,9 @@ class TrainingConfig:
 @dataclass
 class ConceptTrainingConfig(TrainingConfig):
     dropout: float = 0.5
-    freeze_concept_predictor: bool = False
-    concept_predictor_file: Optional[Path] = None
     fuzzy_loss: FuzzyLossConfig = field(default_factory=FuzzyLossConfig)
 
     def extra_resolve(self):
-        if self.concept_predictor_file and not self.concept_predictor_file.exists():
-            raise FileNotFoundError(
-                f"Concept predictor file {self.concept_predictor_file} does not exist"
-            )
         if not (0 <= self.dropout <= 1):
             raise ValueError("Dropout must be between 0 and 1")
 

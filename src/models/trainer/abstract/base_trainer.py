@@ -39,6 +39,7 @@ class BaseTrainer(ABC):
     def __init__(
         self,
         config,
+        experiment_id,
         model,
         train_loader,
         val_loader,
@@ -55,6 +56,8 @@ class BaseTrainer(ABC):
             val_loader (DataLoader): DataLoader for the validation dataset.
             config (Config): Configuration object containing training parameters and paths.
         """
+        self.experiment_id = experiment_id
+        self.tag = ""
         self.config = config
         self.device = device
         self.log_dir = log_dir
@@ -81,6 +84,10 @@ class BaseTrainer(ABC):
         self.early_stopping = EarlyStopping(
             patience=self.config.early_stopping_patience
         )
+
+        if config.pretrained_weights is not None:
+            print(f"Loading pretrained weights from: {config.pretrained_weights}")
+            self.model.load_state_dict(torch.load(config.pretrained_weights))
 
         return self
 
@@ -116,7 +123,7 @@ class BaseTrainer(ABC):
 
         if val_accuracy > self.best_val_accuracy:
             self.best_val_accuracy = val_accuracy  # TODO: log best_val_accuracy
-            path = self.config.checkpoint_dir / "best_model.pt"  # TODO: meaningful name
+            path = self.config.checkpoint_dir / f"{self.experiment_id}_{self.tag}_best_model.pt"
             torch.save(self.model.state_dict(), path)
             print(
                 f"✅ Best model saved at epoch {epoch+1} — Accuracy: {val_accuracy:.4f}"
@@ -132,7 +139,7 @@ class BaseTrainer(ABC):
         # TODO: Option for passing filename
         print("🔁 Loading best model...")
         self.model.load_state_dict(
-            torch.load(self.config.checkpoint_dir / "best_model.pt")
+            torch.load(self.config.checkpoint_dir / f"{self.experiment_id}_{self.tag}_best_model.pt")
         )
         return self.model
 

@@ -36,6 +36,7 @@ class CBMTrainer:
         self.concept_predictor_trainer = CBMConceptPredictorTrainer(
             config=config.concept_predictor,
             model=self.concept_predictor,
+            experiment_id = config.experiment_id,
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
@@ -46,6 +47,7 @@ class CBMTrainer:
         self.label_predictor_trainer = CBMLabelPredictorTrainer(
             config=config.label_predictor,
             model=self.label_predictor,
+            experiment_id = config.experiment_id,
             concept_predictor=self.concept_predictor,
             train_loader=train_loader,
             val_loader=val_loader,
@@ -60,7 +62,10 @@ class CBMTrainer:
         """
         # TODO: check if concept predictor should be trained first
         # Train concept predictor
-        print("\n#### Training concept predictor...")
-        self.concept_predictor = self.concept_predictor_trainer.train()
-        print("\n\n#### Training label predictor...")
-        self.label_predictor = self.label_predictor_trainer.train()
+        if not self.config.concept_predictor.freeze:
+            print("\n#### Training concept predictor...")
+            self.concept_predictor = self.concept_predictor_trainer.train()
+
+        if not self.config.label_predictor.freeze:
+            print("\n\n#### Training label predictor...")
+            self.label_predictor = self.label_predictor_trainer.train()
