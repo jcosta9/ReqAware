@@ -21,6 +21,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         self,
         config,
         model,
+        experiment_id,
         train_loader,
         val_loader,
         test_loader,
@@ -29,9 +30,10 @@ class CBMConceptPredictorTrainer(BaseTrainer):
     ):
 
         super().__init__(
-            config, model, train_loader, val_loader, test_loader, log_dir, device
+            config, experiment_id, model, train_loader, val_loader, test_loader, log_dir, device
         )
 
+        self.tag += "concept_predictor"
         self.criterion = CustomFuzzyLoss(
             config=self.config.fuzzy_loss, current_loss_fn=self.criterion
         )
