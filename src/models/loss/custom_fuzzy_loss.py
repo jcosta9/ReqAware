@@ -39,6 +39,7 @@ class CustomFuzzyLoss(nn.Module):
                 raise Exception(f"Fuzzy rule {rule_name} could not be instantiated.")
 
     def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+        y_pred = torch.sigmoid(y_pred)
         standard_loss = self.current_loss_fn(y_pred, y_true)
         # updating the loss to make it visible outside the class
         self.last_standard_loss = standard_loss.detach()
