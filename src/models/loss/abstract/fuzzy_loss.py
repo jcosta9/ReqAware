@@ -17,10 +17,10 @@ class FuzzyLoss(nn.Module, ABC):
         a_aggregation: Aggregation,
     ):
         super().__init__()
-        self.t_norm = t_norm()
-        self.t_conorm = t_conorm()
-        self.e_aggregation = e_aggregation()
-        self.a_aggregation = a_aggregation()
+        self.t_norm = t_norm
+        self.t_conorm = t_conorm
+        self.e_aggregation = e_aggregation
+        self.a_aggregation = a_aggregation
 
     def forward(self, y_pred):
         """This forward assumes that we only need the predicted label since the fuzzy loss is indepndent of the true vector."""

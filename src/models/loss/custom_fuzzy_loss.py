@@ -1,8 +1,6 @@
 import torch
 from torch import nn
-from .abstract.fuzzy_loss import FuzzyLoss
-from .abstract.fuzzy_transformation_abstract import FuzzyTransformation
-from typing import Dict, Type
+from typing import Dict
 
 
 class CustomFuzzyLoss(nn.Module):
@@ -26,12 +24,18 @@ class CustomFuzzyLoss(nn.Module):
     def _build_rules_from_config(self, config: Dict):
         for rule_name, rule_config in config.rules.items():
             try:
+                # retrieving the paratmers of the config for the operators
+                t_norm = rule_config.operators.t_norm.class_name(**rule_config.operators.t_norm.params)
+                t_conorm = rule_config.operators.t_conorm.class_name(**rule_config.operators.t_conorm.params)
+                e_aggregation = rule_config.operators.e_aggregation.class_name(**rule_config.operators.e_aggregation.params)
+                a_aggregation = rule_config.operators.a_aggregation.class_name(**rule_config.operators.a_aggregation.params)
+                
                 self.fuzzy_rules[rule_name] = rule_config.rule(
-                    t_norm=rule_config.operators.t_norm,
-                    t_conorm=rule_config.operators.t_conorm,
-                    e_aggregation=rule_config.operators.e_aggregation,
-                    a_aggregation=rule_config.operators.a_aggregation,
-                    params=rule_config.params,
+                    t_norm=t_norm,
+                    t_conorm=t_conorm,
+                    e_aggregation=e_aggregation,
+                    a_aggregation=a_aggregation,
+                    params=rule_config.params
                 )
                 self.fuzzy_lambdas[rule_name] = rule_config.fuzzy_lambda
             except Exception as e:

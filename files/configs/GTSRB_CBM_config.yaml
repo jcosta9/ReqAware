@@ -11,9 +11,9 @@ dataset:
     num_workers: 4
     shuffle_dataset: True
     pin_memory: True
-    data_path: ../data/raw/GTSRB/converted
+    data_path: data/raw/GTSRB/converted
     val_split: 0.8
-    concepts_file: ../data/raw/GTSRB/concepts/concepts_per_class.csv
+    concepts_file: data/raw/GTSRB/concepts/concepts_per_class.csv
 concept_predictor:
     log_dir: logs
     checkpoint_dir: models
@@ -39,16 +39,30 @@ concept_predictor:
                 rule: ExactlyOneShape
                 fuzzy_lambda: 0.5 
                 operators:
-                    t_norm: godel_t_norm
-                    t_conorm: godel_t_conorm
-                    a_aggregation: godel_a_aggregation
-                    e_aggregation: godel_e_aggregation
+                    t_norm:
+                        class_name: yager_t_norm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    t_conorm:
+                        class_name: yager_t_conorm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    a_aggregation:
+                        class_name: log_product_a_aggregation
+                        params:
+                            eps: 1e-8
+                    e_aggregation:
+                        class_name: generalized_mean_e_aggregation
+                        params:
+                            p: 3.0
                 params: 
                     shape_indices:
-                        - 0
-                        - 1
-                        - 2
-                        - 3
+                        - 6
+                        - 7
+                        - 8
+                        - 9
 label_predictor:
     log_dir: logs
     checkpoint_dir: models

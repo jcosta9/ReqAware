@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from models.registries import (
     CUSTOM_RULES_REGISTRY,
@@ -9,35 +9,38 @@ from models.registries import (
     EAGGREGATION_REGISTRY,
 )
 
+@dataclass
+class FuzzyOperatorParams:
+    class_name: str
+    params: Optional[Dict[str, Any]] = field(default_factory=dict)
 
 @dataclass
 class FuzzyLossOperators:
-    t_norm: str = "godel_t_norm"
-    t_conorm: str = "godel_t_conorm"
-    a_aggregation: str = "godel_a_aggregation"
-    e_aggregation: str = "godel_e_aggregation"
-
+    # defining a default factory with the godel norm
+    t_norm: FuzzyOperatorParams = field(default_factory=lambda: FuzzyOperatorParams(class_name="godel_t_norm"))
+    t_conorm: FuzzyOperatorParams = field(default_factory=lambda: FuzzyOperatorParams(class_name="godel_t_conorm"))
+    a_aggregation: FuzzyOperatorParams = field(default_factory=lambda: FuzzyOperatorParams(class_name="godel_a_aggregation"))
+    e_aggregation: FuzzyOperatorParams = field(default_factory=lambda: FuzzyOperatorParams(class_name="godel_e_aggregation"))
     def resolve(self):
-        if self.t_norm in TNORM_REGISTRY:
-            self.t_norm = TNORM_REGISTRY[self.t_norm]
+        if self.t_norm.class_name in TNORM_REGISTRY:
+            self.t_norm.class_name = TNORM_REGISTRY[self.t_norm.class_name]
         else:
-            raise ValueError(f"Unknown TNORM {self.t_norm}")
+            raise ValueError(f"Unknown TNORM {self.t_norm.class_name}")
 
-        if self.t_conorm in TCONORM_REGISTRY:
-            self.t_conorm = TCONORM_REGISTRY[self.t_conorm]
+        if self.t_conorm.class_name in TCONORM_REGISTRY:
+            self.t_conorm.class_name = TCONORM_REGISTRY[self.t_conorm.class_name]
         else:
-            raise ValueError(f"Unknown TCONORM {self.t_conorm}")
+            raise ValueError(f"Unknown TCONORM {self.t_conorm.class_name}")
 
-        if self.a_aggregation in AAGGREGATION_REGISTRY:
-            self.a_aggregation = AAGGREGATION_REGISTRY[self.a_aggregation]
+        if self.a_aggregation.class_name in AAGGREGATION_REGISTRY:
+            self.a_aggregation.class_name = AAGGREGATION_REGISTRY[self.a_aggregation.class_name]
         else:
-            raise ValueError(f"Unknown A Aggregation {self.a_aggregation}")
+            raise ValueError(f"Unknown A Aggregation {self.a_aggregation.class_name}")
 
-        if self.e_aggregation in EAGGREGATION_REGISTRY:
-            self.e_aggregation = EAGGREGATION_REGISTRY[self.e_aggregation]
+        if self.e_aggregation.class_name in EAGGREGATION_REGISTRY:
+            self.e_aggregation.class_name = EAGGREGATION_REGISTRY[self.e_aggregation.class_name]
         else:
-            raise ValueError(f"Unknown E Aggregation {self.e_aggregation}")
-
+            raise ValueError(f"Unknown E Aggregation {self.e_aggregation.class_name}")
 
 @dataclass
 class FuzzyLossCustomRules:
