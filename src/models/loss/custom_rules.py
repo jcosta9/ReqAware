@@ -13,7 +13,7 @@ class ExactlyOneShape(FuzzyLoss):
         params: dict,
     ):
         super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
-        
+
         self.shape_indices = params.get("shape_indices", {})
         if len(self.shape_indices) == 0:
             raise ValueError(

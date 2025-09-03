@@ -31,7 +31,14 @@ class CBMLabelPredictorTrainer(BaseTrainer):
     ):
 
         super().__init__(
-            config, experiment_id, model, train_loader, val_loader, test_loader, log_dir, device
+            config,
+            experiment_id,
+            model,
+            train_loader,
+            val_loader,
+            test_loader,
+            log_dir,
+            device,
         )
 
         self.tag += "label_predictor"

@@ -31,7 +31,7 @@ class CustomFuzzyLoss(nn.Module):
                     t_conorm=rule_config.operators.t_conorm,
                     e_aggregation=rule_config.operators.e_aggregation,
                     a_aggregation=rule_config.operators.a_aggregation,
-                    params=rule_config.params
+                    params=rule_config.params,
                 )
                 self.fuzzy_lambdas[rule_name] = rule_config.fuzzy_lambda
             except Exception as e:
