@@ -50,7 +50,7 @@ class ExactlyOneShape(FuzzyLoss):
         exist_agg = self.e_aggregation(batch_losses)
 
         if y_pred.dim() == 1:
-            batch_losses = batch_losses.squezze()
+            exist_agg = exist_agg.squezze()
         return 1 - exist_agg
 
 class ExactlyOneMainColour(FuzzyLoss):
@@ -101,5 +101,59 @@ class ExactlyOneMainColour(FuzzyLoss):
         exist_agg = self.e_aggregation(batch_losses)
 
         if y_pred.dim() == 1:
-            batch_losses = batch_losses.squezze()
+            exist_agg = exist_agg.squezze()
         return 1 - exist_agg
+
+class AtMostOneBorderColour(FuzzyLoss):
+    """This class implements the ExactlyOneMainColour fuzzy rule."""
+    def __init__(
+        self,
+        t_norm: Tnorm,
+        t_conorm: Tconorm,
+        e_aggregation: Aggregation,
+        a_aggregation: Aggregation,
+        params: dict,
+    ):
+        super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
+
+        self.border_colour_indices = params.get("border_colour_indices", {})
+        if len(self.border_colour_indices) == 0:
+            raise ValueError(
+                "ExactlyOneMainColour fuzzy rule requires a list of main colour indices as params"
+            )
+
+    def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
+        """Collects t-norm values using an explicit for loop."""
+
+        # tricking around to fix batch size
+        if y_pred.dim() == 1:
+            y_pred = y_pred.unsqueeze(0)
+
+        # Isolate the concept probabilities we're working with
+        concept_probs = y_pred[:, self.border_colour_indices]
+        batch_size, num_concepts = concept_probs.shape
+        batch_losses = []
+
+        for i in range(num_concepts):
+            other_concepts = torch.cat(
+                [concept_probs[:, :i], concept_probs[:, i + 1 :]], dim=1
+            )
+            # creating the pairs between current concept and other concepts
+            pairs = []
+            for j in range(other_concepts.shape[1]):
+                # unsqueezing the tensors to allow for concate later
+                tensor_i = concept_probs[:, i].unsqueeze(1) 
+                tensor_j = other_concepts[:, j].unsqueeze(1)
+                t_norm = self.t_norm(tensor_i, tensor_j)
+                negation = 1 - t_norm
+                pairs.append(negation)
+            pairs = torch.cat(pairs, dim=1)
+            batch_losses.append(pairs)
+        # Apply the universal aggregation (e.g., godel) over the "other" concepts
+        batch_losses = torch.cat(batch_losses, dim=1)
+        all_aggregation = self.a_aggregation(batch_losses)
+
+        # accounting for single tensor inputs
+        if y_pred.dim() == 1:
+            all_aggregation = all_aggregation.squezze()
+        return 1 - all_aggregation
