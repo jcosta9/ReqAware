@@ -1,7 +1,8 @@
-from models.loss.custom_rules import ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour
+from models.loss.custom_rules import ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers
 
 CUSTOM_RULES_REGISTRY = {
     "ExactlyOneShape": ExactlyOneShape,
     "ExactlyOneMainColour": ExactlyOneMainColour,
-    "AtMostOneBorderColour": AtMostOneBorderColour
+    "AtMostOneBorderColour": AtMostOneBorderColour,
+    "BetweenTwoAndThreeNumbers": BetweenTwoAndThreeNumbers
 }

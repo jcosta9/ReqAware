@@ -4,7 +4,7 @@ from models.loss.fuzzy_transformations import (
     GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation
 )
 from models.loss.custom_rules import (
-    ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour
+    ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers
 )
 
 class TestGodelOperators:
@@ -151,5 +151,29 @@ class TestFuzzyRules:
             params={'border_colour_indices': [0, 1, 2]}
         )
         
+        result = rule(test_batch)
+        assert torch.equal(result, expected_loss), f"Expected {expected_loss}, got {result}"
+
+    def test_between_two_and_three_numbers(self, godel_operators):
+        # Setup test data for number rule
+        test_batch = torch.tensor([
+            [0, 0, 0, 0, 0,1],         # No numbers - violates rule
+            [1, 0, 0, 0, 0,1],         # One number - violates rule
+            [1, 1, 0, 0, 0,1],         # Two numbers - follows rule
+            [1, 1, 1, 0, 0,1],         # Three numbers - follows rule
+            [1, 1, 1, 1, 0,1],         # Four numbers - violates rule
+            [1, 1, 1, 1, 1,1],         # Five numbers - violates rule
+        ])
+
+        expected_loss = torch.tensor([0, 1, 0, 0, 1, 1])
+
+        rule = BetweenTwoAndThreeNumbers(
+            t_norm=godel_operators['t_norm'],
+            t_conorm=godel_operators['t_conorm'],
+            e_aggregation=godel_operators['e_aggregation'],
+            a_aggregation=godel_operators['a_aggregation'],
+            params={'number_indices': [0, 1, 2, 3, 4]}
+        )
+        print(type(rule))
         result = rule(test_batch)
         assert torch.equal(result, expected_loss), f"Expected {expected_loss}, got {result}"

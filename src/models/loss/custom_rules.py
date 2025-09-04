@@ -157,3 +157,69 @@ class AtMostOneBorderColour(FuzzyLoss):
         if y_pred.dim() == 1:
             all_aggregation = all_aggregation.squezze()
         return 1 - all_aggregation
+
+class BetweenTwoAndThreeNumbers(FuzzyLoss):
+    """This class implements the """
+    def __init__(
+        self,
+        t_norm: Tnorm,
+        t_conorm: Tconorm,
+        e_aggregation: Aggregation,
+        a_aggregation: Aggregation,
+        params: dict,
+    ):
+        super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
+
+        self.number_indices = params.get("number_indices", {})
+        if len(self.number_indices) == 0:
+            raise ValueError(
+                "ExactlyOneMainColour fuzzy rule requires a list of main colour indices as params"
+            )
+    
+    def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
+        """A conjunction of a negation with exactly one number and four or more numbers."""
+
+        # tricking around to fix batch size in case a tensor of size (n,) is passed
+        if y_pred.dim() == 1:
+            y_pred = y_pred.unsqueeze(0)
+
+        # Isolate the concept probabilities we're working with
+        concept_probs = y_pred[:, self.number_indices]
+        batch_size, num_concepts = concept_probs.shape
+
+        # calculating the four numbers loss and skipping the calculation if we have less than 4 numbers
+        if num_concepts < 4:
+            four_or_more_numbers = torch.zeros(batch_size,1)
+        else:
+            indices = torch.combinations(torch.arange(num_concepts, device=y_pred.device), r=4)
+            # this tensor has the shape (batch, combinations, 4)
+            combinations_probs = concept_probs[:, indices]
+            # we want to calculate the t-norm on each of those combinations out of 4, hence we need to recursevly apply the t-norm
+            # this is sadly incredible ineffecient but I have not found another way
+            recursions = combinations_probs[:, :, 0]
+            for i in range(1, 4):
+                recursions = self.t_norm(recursions, combinations_probs[:, :, i])
+            # this gives us the result of all the t-norms over each combination of 4 numbers
+            exist_agg_at_most_four = self.e_aggregation(recursions)
+
+        # calculating the exactly one number
+        exactly_one_number = []
+
+        for i in range(num_concepts):
+            # The concept we are focusing on in this iteration
+            other_concepts = torch.cat(
+                [concept_probs[:, :i], concept_probs[:, i + 1 :]], dim=1
+            )
+            # Negate them
+            negated_other_concepts = 1.0 - other_concepts
+            # Apply the universal aggregation (e.g., min) over the "other" concepts
+            all_aggregation = self.a_aggregation(negated_other_concepts)
+            # Apply the t-norm between the current concept and the aggregation
+            t_norm = self.t_norm(concept_probs[:, i], all_aggregation)
+            # Add the result for this iteration to our list
+            exactly_one_number.append(t_norm.unsqueeze(1))
+
+        exactly_one_number = torch.cat(exactly_one_number, dim=1)
+        exist_agg_one_number = self.e_aggregation(exactly_one_number)
+
+        return self.t_conorm(exist_agg_at_most_four, exist_agg_one_number)
