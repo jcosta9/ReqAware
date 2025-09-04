@@ -18,7 +18,7 @@ class CBMTrainerConfig:
     print_freq: int = 30
     device: str = "cuda"
     device_no: int = 0
-    log_dir: Path = "runs/default"
+    output_dir: Path = "experiments"
     dataset: ConceptDatasetConfig = field(default_factory=ConceptDatasetConfig)
     concept_predictor: ConceptTrainingConfig = field(
         default_factory=ConceptTrainingConfig
@@ -33,8 +33,17 @@ class CBMTrainerConfig:
             if self.device == "cuda" and torch.cuda.is_available()
             else "cpu"
         )
+
+        try:
+            self.output_dir = Path(self.output_dir) / self.experiment_id
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Directory '{self.output_dir}' created successfully.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            
+
         self.dataset.resolve()
-        self.concept_predictor.resolve()
-        self.label_predictor.resolve()
+        self.concept_predictor.resolve(output_dir=self.output_dir)
+        self.label_predictor.resolve(output_dir=self.output_dir)
 
         self.concept_predictor.fuzzy_loss.concept_map = self.dataset.get_concept_map()

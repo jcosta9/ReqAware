@@ -44,7 +44,6 @@ class BaseTrainer(ABC):
         train_loader,
         val_loader,
         test_loader,
-        log_dir=None,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
         """
@@ -60,7 +59,7 @@ class BaseTrainer(ABC):
         self.tag = ""
         self.config = config
         self.device = device
-        self.log_dir = log_dir
+        self.log_dir = config.log_dir
         self.model = model.to(self.device)
         self.train_loader = train_loader
         self.val_loader = val_loader

@@ -26,7 +26,6 @@ class CBMLabelPredictorTrainer(BaseTrainer):
         train_loader,
         val_loader,
         test_loader,
-        log_dir=None,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
 
@@ -37,7 +36,6 @@ class CBMLabelPredictorTrainer(BaseTrainer):
             train_loader,
             val_loader,
             test_loader,
-            log_dir,
             device,
         )
 
@@ -81,7 +79,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
         global_step_base = epoch * STEPS
 
         self.writer.add_scalar(
-            "Learning Rate/Concept_Predictor",
+            "Learning Rate/Label_Predictor",
             self.optimizer.param_groups[0]["lr"],
             epoch,
         )
@@ -215,16 +213,16 @@ class CBMLabelPredictorTrainer(BaseTrainer):
         if mode == "test":
             report = f"Labels: \n {classification_report(y_true, y_pred)}"
             logging.info(report)
-            self.writer.add_text("Classification Report/Test", report, 0)
+            self.writer.add_text("Classification Report/Label_Predictor/Test", report, 0)
             return None, accuracy
 
         avg_loss = loss / len(dataloader.dataset)
 
         self.writer.add_scalar(
-            f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch
+            f"Loss/{mode.upper()}/Label_Predictor", avg_loss, epoch
         )
         self.writer.add_scalar(
-            f"Accuracy/{mode.upper()}/Concept_Predictor", accuracy, epoch
+            f"Accuracy/{mode.upper()}/Label_Predictor", accuracy, epoch
         )
 
         return avg_loss, accuracy
