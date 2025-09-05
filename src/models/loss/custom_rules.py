@@ -127,7 +127,7 @@ class AtMostOneBorderColour(FuzzyLoss):
         self.border_colour_indices = params.get("border_colour_indices", {})
         if len(self.border_colour_indices) == 0:
             raise ValueError(
-                "ExactlyOneMainColour fuzzy rule requires a list of main colour indices as params"
+                "AtMostOneBorderColour fuzzy rule requires a list of main colour indices as params"
             )
 
     def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
@@ -184,7 +184,7 @@ class BetweenTwoAndThreeNumbers(FuzzyLoss):
         self.number_indices = params.get("number_indices", {})
         if len(self.number_indices) == 0:
             raise ValueError(
-                "ExactlyOneMainColour fuzzy rule requires a list of main colour indices as params"
+                "BetweenTwoAndThreeNumbers fuzzy rule requires a list of main colour indices as params"
             )
     
     def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
@@ -197,13 +197,12 @@ class BetweenTwoAndThreeNumbers(FuzzyLoss):
             y_pred = y_pred.unsqueeze(0)
             was_unsqueezed = True
 
-        # Isolate the concept probabilities we're working with
         concept_probs = y_pred[:, self.number_indices]
         batch_size, num_concepts = concept_probs.shape
 
         # calculating the four numbers loss and skipping the calculation if we have less than 4 numbers
         if num_concepts < 4:
-            four_or_more_numbers = torch.zeros(batch_size,1)
+            exist_agg_at_most_four = torch.zeros(batch_size)
         else:
             indices = torch.combinations(torch.arange(num_concepts, device=y_pred.device), r=4)
             # this tensor has the shape (batch, combinations, 4)
@@ -292,3 +291,70 @@ class AtMostOneWarning(FuzzyLoss):
             all_aggregation = all_aggregation.squeeze(0)
             
         return 1 - all_aggregation
+
+class NoSymbolsExactlyTwoColours(FuzzyLoss):
+    """This class implements the rule: If a sign has no symbols it has exactly two colours. This is a concept group relation.
+    To calculate the loss we penalize each input if: It has no symbols and one or less colours or three or more symbols."""
+
+    def __init__(self, t_norm: Tnorm, t_conorm: Tconorm, e_aggregation: Aggregation, a_aggregation: Aggregation, params: dict):
+        super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
+
+        self.symbol_indices = params.get("symbol_indices", {})
+        self.colour_indices = params.get("colour_indices", {})
+        if (len(self.symbol_indices) == 0) or (len(self.colour_indices) == 0):
+            raise ValueError(
+                "NoSymbolsExactlyTwoColours fuzzy rule requires a list of symbol and colour indices as params."
+            )
+        
+    def no_symbols(self, y_pred):
+        symbol_probs = y_pred[:, self.symbol_indices]
+        negation = 1 - symbol_probs
+        no_symbols_aggregation = self.a_aggregation(negation)
+        return no_symbols_aggregation    
+    
+    def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
+        # tricking around to fix batch size in case a tensor of size (n,) is passed
+        if y_pred.dim() == 1:
+            y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
+        
+        # ---- calculating has no symbols.
+        no_symbols = self.no_symbols(y_pred)
+
+        # ---- calculating zero or one colours from at least two colours
+        colour_probs = y_pred[:, self.colour_indices]
+        batch_size, num_colours = colour_probs.shape
+        # vectorised implementation of the negation of has two colours
+        # in the first step we get all the combinatorial indices
+        indices = torch.triu_indices(num_colours, num_colours, offset=1) # gets all row and col indices from matrix diag that is offset by one
+        concepts_i = colour_probs[:, indices[0]]
+        concepts_j = colour_probs[:, indices[1]]
+
+        pairwise_violations = self.t_norm(concepts_i, concepts_j)
+        # is there are two distinct colours present this becomes zero (in the godel case)
+        pairwise_negation = 1 - pairwise_violations
+        has_zero_or_one_colour = self.a_aggregation(pairwise_negation)
+
+        # ----- calculating has three or more colours
+        # calculating the three colour loss and skipping the calculation if we have less than 3 colours
+        if num_colours < 3:
+            has_three_or_more = torch.zeros(batch_size)
+        else:
+            indices = torch.combinations(torch.arange(num_colours, device=y_pred.device), r=3)
+            combinations_probs = colour_probs[:, indices]
+            recursions = combinations_probs[:, :, 0]
+            for i in range(1, 3):
+                recursions = self.t_norm(recursions, combinations_probs[:, :, i])
+            # this gives us the result of all the t-norms over each combination of 3 numbers
+            has_three_or_more = self.e_aggregation(recursions)
+
+        # ----- putting it all together via no t-conorm(zero_or_one, three_or_more)
+        not_exactly_two_colours = self.t_conorm(has_three_or_more, has_zero_or_one_colour)
+        batch_loss = self.t_norm(no_symbols, not_exactly_two_colours)
+
+        if was_unsqueezed:
+            batch_loss =  batch_loss.squeeze(0)
+        
+        return batch_loss
