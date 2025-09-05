@@ -4,7 +4,7 @@ from models.loss.fuzzy_transformations import (
     GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation
 )
 from models.loss.custom_rules import (
-    ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers
+    ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning
 )
 
 class TestGodelOperators:
@@ -83,7 +83,7 @@ class TestFuzzyRules:
     
     @pytest.fixture
     def expected_shape_loss_tensor(self):
-        return torch.tensor([0])
+        return torch.tensor(0)
     
     @pytest.fixture
     def godel_operators(self):
@@ -177,3 +177,54 @@ class TestFuzzyRules:
         print(type(rule))
         result = rule(test_batch)
         assert torch.equal(result, expected_loss), f"Expected {expected_loss}, got {result}"
+
+    def test_at_most_one_warning(self, godel_operators):
+        """Test the AtMostOneWarning fuzzy rule with different warning symbol combinations"""
+        # Setup test data for warning symbols
+        test_batch = torch.tensor([
+            [0, 0, 0, 1],  # No warning symbols - follows rule
+            [1, 0, 0, 1],  # One warning symbol - follows rule
+            [1, 1, 0, 1],  # Two warning symbols - violates rule
+            [1, 1, 1, 1],  # Three warning symbols - violates rule
+        ])
+        
+        expected_loss = torch.tensor([0, 0, 1, 1])
+        
+        rule = AtMostOneWarning(
+            t_norm=godel_operators['t_norm'],
+            t_conorm=godel_operators['t_conorm'],
+            e_aggregation=godel_operators['e_aggregation'],
+            a_aggregation=godel_operators['a_aggregation'],
+            params={'warning_indices': [0, 1, 2]}
+        )
+        
+        result = rule(test_batch)
+        assert torch.equal(result, expected_loss), f"Expected {expected_loss}, got {result}"
+
+    def test_at_most_one_warning_edge_cases(self, godel_operators):
+        """Test the AtMostOneWarning fuzzy rule with edge cases"""
+        # Edge case: single tensor input
+        test_tensor = torch.tensor([0, 1, 0, 1])  # One warning symbol - follows rule
+        expected_loss = torch.tensor(0)
+
+        rule = AtMostOneWarning(
+            t_norm=godel_operators['t_norm'],
+            t_conorm=godel_operators['t_conorm'],
+            e_aggregation=godel_operators['e_aggregation'],
+            a_aggregation=godel_operators['a_aggregation'],
+            params={'warning_indices': [0, 1, 2]}
+        )
+
+        result = rule(test_tensor)
+        assert torch.equal(result, expected_loss), f"Expected {expected_loss} for single tensor, got {result}"
+
+        # Edge case: fuzzy values between 0 and 1
+        test_fuzzy = torch.tensor([
+            [0.3, 0.4, 0, 1],  # Two partial warning symbols - partially violates rule
+            [0.9, 0.8, 0, 1],  # Two strong warning symbols - strongly violates rule
+        ])
+
+        # With Gödel operators, result should be binary (0 or 1)
+        # But the violation should be stronger for the second case
+        result_fuzzy = rule(test_fuzzy)
+        assert result_fuzzy[1] >= result_fuzzy[0], "Higher probabilities should result in stronger violation"

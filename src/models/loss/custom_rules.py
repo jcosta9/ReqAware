@@ -23,9 +23,12 @@ class ExactlyOneShape(FuzzyLoss):
     def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
         """Collects t-norm values using an explicit for loop."""
 
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
         # tricking around to fix batch size
         if y_pred.dim() == 1:
             y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
 
         # Isolate the concept probabilities we're working with
         concept_probs = y_pred[:, self.shape_indices]
@@ -49,8 +52,10 @@ class ExactlyOneShape(FuzzyLoss):
         batch_losses = torch.cat(batch_losses, dim=1)
         exist_agg = self.e_aggregation(batch_losses)
 
-        if y_pred.dim() == 1:
-            exist_agg = exist_agg.squezze()
+        if was_unsqueezed:
+            print("was unsquezzed")
+            exist_agg = exist_agg.squeeze(0)
+            print(exist_agg.shape)
         return 1 - exist_agg
 
 class ExactlyOneMainColour(FuzzyLoss):
@@ -74,9 +79,12 @@ class ExactlyOneMainColour(FuzzyLoss):
     def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
         """Collects t-norm values using an explicit for loop."""
 
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
         # tricking around to fix batch size
         if y_pred.dim() == 1:
             y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
 
         # Isolate the concept probabilities we're working with
         concept_probs = y_pred[:, self.main_colour_indices]
@@ -100,8 +108,8 @@ class ExactlyOneMainColour(FuzzyLoss):
         batch_losses = torch.cat(batch_losses, dim=1)
         exist_agg = self.e_aggregation(batch_losses)
 
-        if y_pred.dim() == 1:
-            exist_agg = exist_agg.squezze()
+        if was_unsqueezed:
+            exist_agg = exist_agg.squeeze(0)
         return 1 - exist_agg
 
 class AtMostOneBorderColour(FuzzyLoss):
@@ -125,9 +133,12 @@ class AtMostOneBorderColour(FuzzyLoss):
     def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
         """Collects t-norm values using an explicit for loop."""
 
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
         # tricking around to fix batch size
         if y_pred.dim() == 1:
             y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
 
         # Isolate the concept probabilities we're working with
         concept_probs = y_pred[:, self.border_colour_indices]
@@ -154,8 +165,8 @@ class AtMostOneBorderColour(FuzzyLoss):
         all_aggregation = self.a_aggregation(batch_losses)
 
         # accounting for single tensor inputs
-        if y_pred.dim() == 1:
-            all_aggregation = all_aggregation.squezze()
+        if was_unsqueezed:
+            all_aggregation = all_aggregation.squeeze(0)
         return 1 - all_aggregation
 
 class BetweenTwoAndThreeNumbers(FuzzyLoss):
@@ -179,9 +190,12 @@ class BetweenTwoAndThreeNumbers(FuzzyLoss):
     def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
         """A conjunction of a negation with exactly one number and four or more numbers."""
 
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
         # tricking around to fix batch size in case a tensor of size (n,) is passed
         if y_pred.dim() == 1:
             y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
 
         # Isolate the concept probabilities we're working with
         concept_probs = y_pred[:, self.number_indices]
@@ -222,4 +236,59 @@ class BetweenTwoAndThreeNumbers(FuzzyLoss):
         exactly_one_number = torch.cat(exactly_one_number, dim=1)
         exist_agg_one_number = self.e_aggregation(exactly_one_number)
 
-        return self.t_conorm(exist_agg_at_most_four, exist_agg_one_number)
+        result = self.t_conorm(exist_agg_at_most_four, exist_agg_one_number)
+        if was_unsqueezed:
+            result = result.squeeze(0)
+        
+        return result
+
+class AtMostOneWarning(FuzzyLoss):
+    """Defines the at most one warning symbol loss. This works exactly the same as at most one border colour."""
+
+    def __init__(self, t_norm: Tnorm, t_conorm: Tconorm, e_aggregation: Aggregation, a_aggregation: Aggregation, params: dict):
+        super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
+
+        self.warning_indices = params.get("warning_indices", {})
+        if len(self.warning_indices) == 0:
+            raise ValueError(
+                "ExactlyOneMainColour fuzzy rule requires a list of main colour indices as params"
+            )
+        
+    def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
+
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
+        # tricking around to fix batch size
+        if y_pred.dim() == 1:
+            y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
+
+        # Isolate the concept probabilities we're working with
+        concept_probs = y_pred[:, self.warning_indices]
+        batch_size, num_concepts = concept_probs.shape
+        batch_losses = []
+
+        for i in range(num_concepts):
+            other_concepts = torch.cat(
+                [concept_probs[:, :i], concept_probs[:, i + 1 :]], dim=1
+            )
+            # creating the pairs between current concept and other concepts
+            pairs = []
+            for j in range(other_concepts.shape[1]):
+                # unsqueezing the tensors to allow for concate later
+                tensor_i = concept_probs[:, i].unsqueeze(1) 
+                tensor_j = other_concepts[:, j].unsqueeze(1)
+                t_norm = self.t_norm(tensor_i, tensor_j)
+                negation = 1 - t_norm
+                pairs.append(negation)
+            pairs = torch.cat(pairs, dim=1)
+            batch_losses.append(pairs)
+        # Apply the universal aggregation (e.g., godel) over the "other" concepts
+        batch_losses = torch.cat(batch_losses, dim=1)
+        all_aggregation = self.a_aggregation(batch_losses)
+
+        # accounting for single tensor inputs
+        if was_unsqueezed:
+            all_aggregation = all_aggregation.squeeze(0)
+            
+        return 1 - all_aggregation
