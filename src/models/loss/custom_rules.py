@@ -358,3 +358,40 @@ class NoSymbolsExactlyTwoColours(FuzzyLoss):
             batch_loss =  batch_loss.squeeze(0)
         
         return batch_loss
+
+class WarningSignExclusivity(FuzzyLoss):
+    """This class calculates the warning sign exclusivity. If there is a warning sign detected there can be no other signs.
+    Calculating the loss for this one is an all aggregation over all t-norm pairs between a warning symbol and all other symbols."""
+
+
+    def __init__(self, t_norm: Tnorm, t_conorm: Tconorm, e_aggregation: Aggregation, a_aggregation: Aggregation, params: dict):
+        super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
+
+        self.warning_indices = params.get("warning_indices", {})
+        self.symbol_indices = params.get("symbol_indices", {})
+
+        if (len(self.warning_indices) ==0) or (len(self.symbol_indices) == 0) or not (set(self.warning_indices) <= set(self.symbol_indices)):
+            raise ValueError("WarningSignExclusivity requires a set of warning and symbol indices and warning needs to be a subset of symbols.")
+        
+    def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
+        # tricking around to fix batch size in case a tensor of size (n,) is passed
+        if y_pred.dim() == 1:
+            y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
+        
+        symbol_probs = y_pred[:, self.symbol_indices]
+        batch_size, num_symbols = symbol_probs.shape
+
+        indices = torch.triu_indices(len(self.warning_indices),num_symbols, offset=1)
+        concepts_i = symbol_probs[:, indices[0]]
+        concepts_j = symbol_probs[:, indices[1]]
+
+        pairwise_violations = self.t_norm(concepts_i, concepts_j)
+        has_warning_and_other_symbol = self.e_aggregation(pairwise_violations)
+
+        if was_unsqueezed:
+            has_warning_and_other_symbol.squeeze()
+
+        return has_warning_and_other_symbol

@@ -4,7 +4,7 @@ from models.loss.fuzzy_transformations import (
     GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation
 )
 from models.loss.custom_rules import (
-    ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning, NoSymbolsExactlyTwoColours
+    ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning, NoSymbolsExactlyTwoColours, WarningSignExclusivity
 )
 
 class TestGodelOperators:
@@ -338,4 +338,126 @@ class TestFuzzyRules:
         
         result_min = min_colors_rule(test_min)
         assert torch.equal(result_min, expected_min), f"Expected {expected_min} for minimum colors, got {result_min}"
-    
+
+        
+    def test_warning_sign_exclusivity(self, godel_operators):
+        """Test the WarningSignExclusivity fuzzy rule with different symbol combinations"""
+        # Setup test data
+        # Format: [symbols (warnings first, then other symbols)...]
+        test_batch = torch.tensor([
+            # Compliant cases (loss should be 0)
+            [0, 0, 0, 0, 0],  # No warnings, no other symbols
+            [1, 0, 0, 0, 0],  # One warning, no other symbols
+            [0, 1, 0, 0, 0],  # One warning, no other symbols
+            [0, 0, 1, 0, 0],  # No warnings, one symbol
+            
+            # Violation cases (loss should be 1)
+            [1, 0, 1, 0, 0],  # One warning and one symbol
+            [0, 1, 0, 1, 0],  # One warning and one symbol
+            [1, 1, 1, 1, 1],  # Multiple warnings and symbols
+        ])
+        
+        expected_loss = torch.tensor([0, 0, 0, 0, 1, 1, 1])
+        
+        rule = WarningSignExclusivity(
+            t_norm=godel_operators['t_norm'],
+            t_conorm=godel_operators['t_conorm'],
+            e_aggregation=godel_operators['e_aggregation'],
+            a_aggregation=godel_operators['a_aggregation'],
+            params={
+                'warning_indices': [0, 1],  # First two indices are warnings
+                'symbol_indices': [0, 1, 2, 3, 4]  # All are symbols (warnings included)
+            }
+        )
+        
+        result = rule(test_batch)
+        assert torch.equal(result, expected_loss), f"Expected {expected_loss}, got {result}"
+
+    def test_warning_sign_exclusivity_edge_cases(self, godel_operators):
+        """Test the WarningSignExclusivity fuzzy rule with edge cases"""
+        
+        # Edge case 1: Single tensor input (non-batch)
+        # Format: [warnings..., other symbols...]
+        test_tensor = torch.tensor([1, 0, 0, 0, 0])  # One warning, no other symbols (compliant)
+        expected_loss = torch.tensor([0])
+        
+        rule = WarningSignExclusivity(
+            t_norm=godel_operators['t_norm'],
+            t_conorm=godel_operators['t_conorm'],
+            e_aggregation=godel_operators['e_aggregation'],
+            a_aggregation=godel_operators['a_aggregation'],
+            params={
+                'warning_indices': [0, 1],
+                'symbol_indices': [0, 1, 2, 3, 4]
+            }
+        )
+        
+        result = rule(test_tensor)
+        assert torch.equal(result, expected_loss), f"Expected {expected_loss} for single tensor, got {result}"
+        
+        # Edge case 2: Single warning symbol
+        single_warning_rule = WarningSignExclusivity(
+            t_norm=godel_operators['t_norm'],
+            t_conorm=godel_operators['t_conorm'],
+            e_aggregation=godel_operators['e_aggregation'],
+            a_aggregation=godel_operators['a_aggregation'],
+            params={
+                'warning_indices': [0],  # Only one warning index
+                'symbol_indices': [0, 1, 2, 3]
+            }
+        )
+        
+        test_single = torch.tensor([
+            [1, 0, 0, 0],  # Warning only (compliant)
+            [1, 1, 0, 0],  # Warning and another symbol (violation)
+            [0, 1, 0, 0],  # No warning, other symbol (compliant)
+        ])
+        
+        expected_single = torch.tensor([0, 1, 0])
+        
+        result_single = single_warning_rule(test_single)
+        assert torch.equal(result_single, expected_single), f"Expected {expected_single} for single warning, got {result_single}"
+        
+        # Edge case 3: Fuzzy values between 0 and 1
+        test_fuzzy = torch.tensor([
+            [0.9, 0.1, 0.1, 0.1, 0.1],  # Strong warning, weak other symbols
+            [0.2, 0.3, 0.8, 0.7, 0.1],  # Weak warnings, strong other symbols
+            [0.7, 0.8, 0.6, 0.9, 0.5],  # Strong warnings and strong other symbols
+        ])
+        
+        # With Gödel operators:
+        # - First sample: low violation (warnings don't strongly co-occur with other symbols)
+        # - Second sample: moderate violation (weak warning presence with other symbols)
+        # - Third sample: high violation (strong presence of both warnings and other symbols)
+        
+        result_fuzzy = rule(test_fuzzy)
+        
+        # The third sample should have the highest violation
+        assert result_fuzzy[2] >= result_fuzzy[1], "Stronger co-occurrence should result in higher violation"
+        assert result_fuzzy[2] >= result_fuzzy[0], "Stronger co-occurrence should result in higher violation"
+        
+        # Edge case 4: Empty warning set (should raise ValueError)
+        with pytest.raises(ValueError):
+            invalid_rule = WarningSignExclusivity(
+                t_norm=godel_operators['t_norm'],
+                t_conorm=godel_operators['t_conorm'],
+                e_aggregation=godel_operators['e_aggregation'],
+                a_aggregation=godel_operators['a_aggregation'],
+                params={
+                    'warning_indices': [],  # Empty warning set
+                    'symbol_indices': [0, 1, 2]
+                }
+            )
+        
+        # Edge case 5: Warning indices not a subset of symbol indices (should raise ValueError)
+        with pytest.raises(ValueError):
+            invalid_rule = WarningSignExclusivity(
+                t_norm=godel_operators['t_norm'],
+                t_conorm=godel_operators['t_conorm'],
+                e_aggregation=godel_operators['e_aggregation'],
+                a_aggregation=godel_operators['a_aggregation'],
+                params={
+                    'warning_indices': [0, 5],  # Index 5 not in symbol_indices
+                    'symbol_indices': [0, 1, 2, 3, 4]
+                }
+            )
