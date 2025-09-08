@@ -4,7 +4,7 @@ from models.loss.fuzzy_transformations import (
     GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation
 )
 from models.loss.custom_rules import (
-    ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning, NoSymbolsExactlyTwoColours, WarningSignExclusivity
+    ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning, NoSymbolsExactlyTwoColours, WarningSignExclusivity, WarningImpliesMainWhite
 )
 
 class TestGodelOperators:
@@ -459,5 +459,86 @@ class TestFuzzyRules:
                 params={
                     'warning_indices': [0, 5],  # Index 5 not in symbol_indices
                     'symbol_indices': [0, 1, 2, 3, 4]
+                }
+            )
+
+    def test_warning_implies_main_white(self, godel_operators):
+        """Test the WarningImpliesMainWhite fuzzy rule with different combinations"""
+        # Setup test data
+        # Format: [warning symbols..., white main color]
+        test_batch = torch.tensor([
+            # Compliant cases (loss should be 0)
+            [0, 0, 1],  # No warnings, white main color
+            [1, 0, 1],  # Warning present, white main color
+            [0, 1, 1],  # Warning present, white main color
+            [0, 0, 0],  # No warnings, no white main color
+            
+            # Violation cases (loss should be > 0)
+            [1, 0, 0],  # Warning present, no white main color
+            [0, 1, 0],  # Warning present, no white main color
+            [1, 1, 0],  # Multiple warnings, no white main color
+        ])
+        
+        expected_loss = torch.tensor([0, 0, 0, 0, 1, 1, 1])
+        
+        rule = WarningImpliesMainWhite(
+            t_norm=godel_operators['t_norm'],
+            t_conorm=godel_operators['t_conorm'],
+            e_aggregation=godel_operators['e_aggregation'],
+            a_aggregation=godel_operators['a_aggregation'],
+            params={
+                'warning_indices': [0, 1],
+                'main_colour_white': [2]
+            }
+        )
+        
+        result = rule(test_batch)
+        assert torch.equal(result, expected_loss), f"Expected {expected_loss}, got {result}"
+
+    def test_warning_implies_main_white_edge_cases(self, godel_operators):
+        """Test the WarningImpliesMainWhite fuzzy rule with edge cases"""
+        
+        # Edge case 1: Single tensor input (non-batch)
+        test_tensor = torch.tensor([1, 0, 1])  # One warning, white main color (compliant)
+        expected_loss = torch.tensor(0)
+        
+        rule = WarningImpliesMainWhite(
+            t_norm=godel_operators['t_norm'],
+            t_conorm=godel_operators['t_conorm'],
+            e_aggregation=godel_operators['e_aggregation'],
+            a_aggregation=godel_operators['a_aggregation'],
+            params={
+                'warning_indices': [0, 1],
+                'main_colour_white': [2]
+            }
+        )
+        
+        result = rule(test_tensor)
+        assert torch.equal(result, expected_loss), f"Expected {expected_loss} for single tensor, got {result}"
+        
+        # Edge case 2: Fuzzy values between 0 and 1
+        test_fuzzy = torch.tensor([
+            [0.9, 0.1, 0.9],  # Strong warning, strong white (compliant)
+            [0.9, 0.1, 0.1],  # Strong warning, weak white (violation)
+            [0.1, 0.1, 0.9],  # Weak warning, strong white (mostly compliant)
+            [0.1, 0.1, 0.1],  # Weak warning, weak white (slightly violating)
+        ])
+        
+        result_fuzzy = rule(test_fuzzy)
+        
+        # Violations should be ordered by strength
+        assert result_fuzzy[1] > result_fuzzy[3], "Strong warning with weak white should violate more than weak warning with weak white"
+        assert result_fuzzy[1] > result_fuzzy[0], "Strong warning with weak white should violate more than strong warning with strong white"
+        
+        # Edge case 3: Multiple white main colors (should raise ValueError)
+        with pytest.raises(ValueError):
+            invalid_rule = WarningImpliesMainWhite(
+                t_norm=godel_operators['t_norm'],
+                t_conorm=godel_operators['t_conorm'],
+                e_aggregation=godel_operators['e_aggregation'],
+                a_aggregation=godel_operators['a_aggregation'],
+                params={
+                    'warning_indices': [0, 1],
+                    'main_colour_white': [2, 3]  # Multiple white indices (invalid)
                 }
             )

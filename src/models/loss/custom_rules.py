@@ -53,9 +53,7 @@ class ExactlyOneShape(FuzzyLoss):
         exist_agg = self.e_aggregation(batch_losses)
 
         if was_unsqueezed:
-            print("was unsquezzed")
             exist_agg = exist_agg.squeeze(0)
-            print(exist_agg.shape)
         return 1 - exist_agg
 
 class ExactlyOneMainColour(FuzzyLoss):
@@ -392,6 +390,74 @@ class WarningSignExclusivity(FuzzyLoss):
         has_warning_and_other_symbol = self.e_aggregation(pairwise_violations)
 
         if was_unsqueezed:
-            has_warning_and_other_symbol.squeeze()
+            has_warning_and_other_symbol = has_warning_and_other_symbol.squeeze()
 
         return has_warning_and_other_symbol
+
+class WarningImpliesMainWhite(FuzzyLoss):
+    """This class implements the implication that is there is a warning symbol the main colour will be white."""
+
+    def __init__(self, t_norm: Tnorm, t_conorm: Tconorm, e_aggregation: Aggregation, a_aggregation: Aggregation, params: dict):
+        super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
+
+        self.warning_indices = params.get("warning_indices", {})
+        self.main_colour_white = params.get("main_colour_white", {})
+
+        if len(self.warning_indices) == 0 or len(self.main_colour_white) != 1:
+            raise ValueError("There must be warning indices and exactly one index ")
+        
+    def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
+        
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
+        # tricking around to fix batch size in case a tensor of size (n,) is passed
+        if y_pred.dim() == 1:
+            y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
+
+        main_colour_white = y_pred[:, self.main_colour_white[0]]
+        warning_symbols = y_pred[:, self.warning_indices]
+
+        exist_aggregation = self.e_aggregation(warning_symbols)
+        negation_of_main = 1 - main_colour_white
+
+        pairwise = self.t_norm(exist_aggregation, negation_of_main)
+
+        if was_unsqueezed:
+            pairwise = pairwise.squeeze()
+
+        return pairwise
+
+class WarningImpliesBorderRed(FuzzyLoss):
+    """This class implements the implication that is there is a warning symbol the main colour will be white."""
+
+    def __init__(self, t_norm: Tnorm, t_conorm: Tconorm, e_aggregation: Aggregation, a_aggregation: Aggregation, params: dict):
+        super().__init__(t_norm, t_conorm, e_aggregation, a_aggregation)
+
+        self.warning_indices = params.get("warning_indices", {})
+        self.border_red_index = params.get("border_red_index", {})
+
+        if len(self.warning_indices) == 0 or len(self.border_red_index) != 1:
+            raise ValueError("There must be warning indices and exactly one index ")
+        
+    def forward(self, y_pred: torch.Tensor) -> torch.Tensor:
+        
+        # Track if we need to squeeze at the end
+        was_unsqueezed = False
+        # tricking around to fix batch size in case a tensor of size (n,) is passed
+        if y_pred.dim() == 1:
+            y_pred = y_pred.unsqueeze(0)
+            was_unsqueezed = True
+
+        border_red = y_pred[:, self.border_red_index[0]]
+        warning_symbols = y_pred[:, self.warning_indices]
+
+        exist_aggregation = self.e_aggregation(warning_symbols)
+        negation_of_main = 1 - border_red
+
+        pairwise = self.t_norm(exist_aggregation, negation_of_main)
+
+        if was_unsqueezed:
+            pairwise = pairwise.squeeze()
+
+        return pairwise

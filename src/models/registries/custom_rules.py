@@ -1,4 +1,4 @@
-from models.loss.custom_rules import ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning, NoSymbolsExactlyTwoColours, WarningSignExclusivity
+from models.loss.custom_rules import ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning, NoSymbolsExactlyTwoColours, WarningSignExclusivity, WarningImpliesBorderRed, WarningImpliesMainWhite
 
 CUSTOM_RULES_REGISTRY = {
     "ExactlyOneShape": ExactlyOneShape,
@@ -7,5 +7,7 @@ CUSTOM_RULES_REGISTRY = {
     "BetweenTwoAndThreeNumbers": BetweenTwoAndThreeNumbers,
     "AtMostOneWarning": AtMostOneWarning,
     "NoSymbolsExactlyTwoColours": NoSymbolsExactlyTwoColours,
-    "WarningSignExclusivity": WarningSignExclusivity
+    "WarningSignExclusivity": WarningSignExclusivity,
+    "WarningImpliesBorderRed": WarningImpliesBorderRed, 
+    "WarningImpliesMainWhite": WarningImpliesMainWhite
 }
