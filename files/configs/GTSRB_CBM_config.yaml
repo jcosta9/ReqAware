@@ -117,6 +117,172 @@ concept_predictor:
                         - 7
                         - 8
                         - 9
+            between_two_and_three_numbers:
+                rule: BetweenTwoAndThreeNumbers
+                fuzzy_lambda: 0.5 
+                operators:
+                    t_norm:
+                        class_name: yager_t_norm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    t_conorm:
+                        class_name: yager_t_conorm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    a_aggregation:
+                        class_name: log_product_a_aggregation
+                        params:
+                            eps: 1e-8
+                    e_aggregation:
+                        class_name: generalized_mean_e_aggregation
+                        params:
+                            p: 2.0
+                params: 
+                    number_indices:
+                        - 10
+                        - 11
+                        - 12
+                        - 13
+                        - 14
+                        - 15
+                        - 16
+                        - 17
+            at_most_one_warning:
+                rule: AtMostOneWarning
+                fuzzy_lambda: 0.5 
+                operators:
+                    t_norm:
+                        class_name: yager_t_norm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    t_conorm:
+                        class_name: yager_t_conorm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    a_aggregation:
+                        class_name: log_product_a_aggregation
+                        params:
+                            eps: 1e-8
+                    e_aggregation:
+                        class_name: generalized_mean_e_aggregation
+                        params:
+                            p: 2.0
+                params: 
+                    warning_indices:
+                        - 21
+                        - 22
+                        - 25
+                        - 26
+                        - 27
+                        - 29
+                        - 30
+                        - 34
+                        - 35
+                        - 36
+            no_symbols_exactly_two_colours:
+                rule: NoSymbolsExactlyTwoColours
+                fuzzy_lambda: 0.5 
+                operators:
+                    t_norm:
+                        class_name: yager_t_norm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    t_conorm:
+                        class_name: yager_t_conorm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    a_aggregation:
+                        class_name: log_product_a_aggregation
+                        params:
+                            eps: 1e-8
+                    e_aggregation:
+                        class_name: generalized_mean_e_aggregation
+                        params:
+                            p: 2.0
+                params: 
+                    symbol_indices: []
+                    colour_indices: []
+            warning_sign_exclusivity:
+                rule: WarningSignExclusivity
+                fuzzy_lambda: 0.5 
+                operators:
+                    t_norm:
+                        class_name: yager_t_norm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    t_conorm:
+                        class_name: yager_t_conorm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    a_aggregation:
+                        class_name: log_product_a_aggregation
+                        params:
+                            eps: 1e-8
+                    e_aggregation:
+                        class_name: generalized_mean_e_aggregation
+                        params:
+                            p: 2.0
+                params: 
+                    warning_indices: []
+                    symbol_indices: []
+            warning_implies_main_white:
+                rule: WarningImpliesMainWhite
+                fuzzy_lambda: 0.5 
+                operators:
+                    t_norm:
+                        class_name: yager_t_norm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    t_conorm:
+                        class_name: yager_t_conorm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    a_aggregation:
+                        class_name: log_product_a_aggregation
+                        params:
+                            eps: 1e-8
+                    e_aggregation:
+                        class_name: generalized_mean_e_aggregation
+                        params:
+                            p: 2.0
+                params: 
+                    warning_indices: []
+                    main_colour_white: []
+            warning_implies_border_red:
+                rule: WarningImpliesBorderRed
+                fuzzy_lambda: 0.5 
+                operators:
+                    t_norm:
+                        class_name: yager_t_norm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    t_conorm:
+                        class_name: yager_t_conorm
+                        params:
+                            p: 2.0
+                            eps: 1e-6
+                    a_aggregation:
+                        class_name: log_product_a_aggregation
+                        params:
+                            eps: 1e-8
+                    e_aggregation:
+                        class_name: generalized_mean_e_aggregation
+                        params:
+                            p: 2.0
+                params: 
+                    warning_indices: []
+                    border_red_index: []
 label_predictor:
     log_dir: logs
     checkpoint_dir: models
