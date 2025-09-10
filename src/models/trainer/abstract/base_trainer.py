@@ -86,7 +86,7 @@ class BaseTrainer(ABC):
 
         if config.pretrained_weights is not None:
             print(f"Loading pretrained weights from: {config.pretrained_weights}")
-            self.model.load_state_dict(torch.load(config.pretrained_weights))
+            self.model.load_state_dict(torch.load(config.pretrained_weightsm, weights_only=True))
 
         return self
 
@@ -143,7 +143,8 @@ class BaseTrainer(ABC):
         self.model.load_state_dict(
             torch.load(
                 self.config.checkpoint_dir
-                / f"{self.experiment_id}_{self.tag}_best_model.pt"
+                / f"{self.experiment_id}_{self.tag}_best_model.pt",
+                weights_only=True
             )
         )
         return self.model
