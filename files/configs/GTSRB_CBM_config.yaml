@@ -1,6 +1,6 @@
 seed: 42
 device: cuda
-device_no: 1
+device_no: 0
 print_freq: 30
 output_dir: experiments
 dataset:
@@ -58,9 +58,7 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    border_colour_indices:
-                        - 4
-                        - 5
+                    border_colour_indices: [4,5]
             exactly_one_main_colour:
                 rule: ExactlyOneMainColour
                 fuzzy_lambda: 0.5 
@@ -84,11 +82,7 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    main_colour_indices:
-                        - 0
-                        - 1
-                        - 2
-                        - 3
+                    main_colour_indices: [0,1,2,3]
             exactly_one_shape:
                 rule: ExactlyOneShape
                 fuzzy_lambda: 0.5 
@@ -112,11 +106,7 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    shape_indices:
-                        - 6
-                        - 7
-                        - 8
-                        - 9
+                    shape_indices: [6,7,8,9]
             between_two_and_three_numbers:
                 rule: BetweenTwoAndThreeNumbers
                 fuzzy_lambda: 0.5 
@@ -140,15 +130,7 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    number_indices:
-                        - 10
-                        - 11
-                        - 12
-                        - 13
-                        - 14
-                        - 15
-                        - 16
-                        - 17
+                    number_indices: [10,11,12,13,14,15,16,17]
             at_most_one_warning:
                 rule: AtMostOneWarning
                 fuzzy_lambda: 0.5 
@@ -172,17 +154,7 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    warning_indices:
-                        - 21
-                        - 22
-                        - 25
-                        - 26
-                        - 27
-                        - 29
-                        - 30
-                        - 34
-                        - 35
-                        - 36
+                    warning_indices: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
             no_symbols_exactly_two_colours:
                 rule: NoSymbolsExactlyTwoColours
                 fuzzy_lambda: 0.5 
@@ -206,8 +178,8 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    symbol_indices: []
-                    colour_indices: []
+                    symbol_indices: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+                    colour_indices: [0, 1, 2, 3, 4, 5]
             warning_sign_exclusivity:
                 rule: WarningSignExclusivity
                 fuzzy_lambda: 0.5 
@@ -231,8 +203,8 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    warning_indices: []
-                    symbol_indices: []
+                    warning_indices: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+                    symbol_indices: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
             warning_implies_main_white:
                 rule: WarningImpliesMainWhite
                 fuzzy_lambda: 0.5 
@@ -256,8 +228,8 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    warning_indices: []
-                    main_colour_white: []
+                    warning_indices: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+                    main_colour_white: [0]
             warning_implies_border_red:
                 rule: WarningImpliesBorderRed
                 fuzzy_lambda: 0.5 
@@ -281,8 +253,8 @@ concept_predictor:
                         params:
                             p: 2.0
                 params: 
-                    warning_indices: []
-                    border_red_index: []
+                    warning_indices: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+                    border_red_index: [5]
 label_predictor:
     log_dir: logs
     checkpoint_dir: models
