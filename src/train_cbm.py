@@ -6,7 +6,7 @@ from config import CBMTrainerConfig
 from models.trainer.cbm_trainer import CBMTrainer
 
 
-def load_config(config_path):
+def load_config(config_path) -> CBMTrainerConfig:
     """
     Load the configuration from a YAML file.
     """

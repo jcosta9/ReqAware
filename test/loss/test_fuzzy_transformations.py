@@ -1,7 +1,7 @@
 import pytest
 import torch
 from models.loss.fuzzy_transformations import (
-    GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation
+    GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation, YagerTNorm, YagerTConorm, LogProductAAggregation, GeneralizedMeanEAggregation
 )
 from models.loss.custom_rules import (
     ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning, NoSymbolsExactlyTwoColours, WarningSignExclusivity, WarningImpliesMainWhite
@@ -379,7 +379,7 @@ class TestFuzzyRules:
         # Edge case 1: Single tensor input (non-batch)
         # Format: [warnings..., other symbols...]
         test_tensor = torch.tensor([1, 0, 0, 0, 0])  # One warning, no other symbols (compliant)
-        expected_loss = torch.tensor([0])
+        expected_loss = torch.tensor(0)
         
         rule = WarningSignExclusivity(
             t_norm=godel_operators['t_norm'],
@@ -542,3 +542,184 @@ class TestFuzzyRules:
                     'main_colour_white': [2, 3]  # Multiple white indices (invalid)
                 }
             )
+
+class TestYagerOperators:
+    @pytest.fixture
+    def test_batch(self):
+        return torch.tensor([[0,0,0,1], [1,0,0,1], [1,1,1,0], [0,1,1,0]])
+    
+    @pytest.fixture
+    def test_tensor(self):
+        return torch.tensor([0,1,0])
+    
+    @pytest.fixture
+    def yager_tnorm_p1(self):
+        return YagerTNorm(p=1.0, eps=0)
+    
+    @pytest.fixture
+    def yager_tnorm_p2(self):
+        return YagerTNorm(p = 2.0, eps=0)
+    
+    @pytest.fixture
+    def yager_tconorm_p1(self):
+        return YagerTConorm(p=1.0, eps=0)
+    
+    @pytest.fixture
+    def yager_tconorm_p2(self):
+        return YagerTConorm(p = 2.0, eps=0)
+    
+    def test_yager_tnorm_p1(self, yager_tnorm_p1):
+        """Test YagerTNorm with p=1.0"""
+        a = torch.tensor([0,1,0,1])
+        b = torch.tensor([0,0,1,1])
+        # YagerTNorm with p=1 should be equivalent to max(0, a + b - 1)
+        expected = torch.tensor([0.0,0.0,0.0,1.0])
+        assert torch.allclose(yager_tnorm_p1(a,b), expected), f"Expected {expected}, got {yager_tnorm_p1(a,b)}"
+        assert torch.allclose(yager_tnorm_p1(torch.tensor(0.7), torch.tensor(0.4)), torch.tensor(0.1)), "Should be max(0, 0.7+0.4-1)"
+    
+    def test_yager_tnorm_p2(self, yager_tnorm_p2):
+        """Test YagerTNorm with p=2.0"""
+        a = torch.tensor([0.0, 0.3, 0.5, 1.0])
+        b = torch.tensor([0.0, 0.6, 0.5, 1.0])
+        
+        # Calculate expected output manually for p=2:
+        # max(0, 1 - ((1-a)^p + (1-b)^p)^(1/p))
+        expected = torch.zeros(4)
+        for i in range(4):
+            complement_sum = (1-a[i])**2 + (1-b[i])**2
+            expected[i] = max(0, 1 - complement_sum**(1/2))
+        
+        assert torch.allclose(yager_tnorm_p2(a,b), expected, atol=1e-5), f"Expected {expected}, got {yager_tnorm_p2(a,b)}"
+    
+    def test_yager_tconorm_p1(self, yager_tconorm_p1):
+        """Test YagerTConorm with p=1.0"""
+        a = torch.tensor([0,1,0,1])
+        b = torch.tensor([0,0,1,1])
+        # YagerTConorm with p=1 should be equivalent to min(1, a + b)
+        expected = torch.tensor([0.,1.,1.,1.])
+        assert torch.allclose(yager_tconorm_p1(a,b), expected), f"Expected {expected}, got {yager_tconorm_p1(a,b)}"
+        assert torch.allclose(yager_tconorm_p1(torch.tensor(0.7), torch.tensor(0.4)), torch.tensor(1.0)), "Should be min(1, 0.7+0.4)"
+    
+    def test_yager_tconorm_p2(self, yager_tconorm_p2):
+        """Test YagerTConorm with p=2.0"""
+        a = torch.tensor([0.0, 0.3, 0.5, 1.0])
+        b = torch.tensor([0.0, 0.6, 0.5, 1.0])
+        
+        # Calculate expected output manually for p=2:
+        # min(1, (a^p + b^p)^(1/p))
+        expected = torch.zeros(4)
+        for i in range(4):
+            sum_powers = a[i]**2 + b[i]**2
+            expected[i] = min(1, sum_powers**(1/2))
+        
+        assert torch.allclose(yager_tconorm_p2(a,b), expected, atol=1e-5), f"Expected {expected}, got {yager_tconorm_p2(a,b)}"
+    
+class TestAdvancedAggregations:
+    @pytest.fixture
+    def test_batch(self):
+        return torch.tensor([[0,0,0,1], [1,0,0,1], [1,1,1,0], [0,1,1,0], [1,1,1,1]])
+    
+    @pytest.fixture
+    def test_tensor(self):
+        return torch.tensor([0,1,0])
+    
+    @pytest.fixture
+    def log_product_aggregation(self):
+        return LogProductAAggregation()
+    
+    @pytest.fixture
+    def gen_mean_p1(self):
+        return GeneralizedMeanEAggregation(p=1.0)
+    
+    @pytest.fixture
+    def gen_mean_p2(self):
+        return GeneralizedMeanEAggregation(p = 2.0)
+    
+    def test_log_product_aggregation_batch(self, test_batch, log_product_aggregation):
+        """Test LogProductAAggregation on batch data"""
+        # LogProductAAggregation is 1 - exp(mean(log(1-x_i)))
+        result = log_product_aggregation(test_batch)
+        
+        # Calculate expected output manually
+        expected = torch.tensor([0.,0.,0.,0.,1.])
+        for i in range(4):
+            # Apply epsilon to avoid log(0)
+            epsilon = 1e-7
+            adjusted = torch.clamp(test_batch[i], epsilon, 1-epsilon)
+            expected[i] = 1 - torch.exp(torch.mean(torch.log(1 - adjusted)))
+
+        assert torch.allclose(result, expected, atol=1e-4), f"Expected {expected}, got {result}"
+    
+    def test_log_product_aggregation_tensor(self, test_tensor, log_product_aggregation):
+        """Test LogProductAAggregation on a single tensor"""
+        result = log_product_aggregation(test_tensor)
+        
+        # Calculate expected output manually
+        epsilon = 1e-7
+        adjusted = torch.clamp(test_tensor, epsilon, 1-epsilon)
+        expected = 1 - torch.exp(torch.mean(torch.log(1 - adjusted)))
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_p1_batch(self, test_batch, gen_mean_p1):
+        """Test GeneralizedMeanEAggregation with p=1.0 on batch data"""
+        # p=1 is the arithmetic mean
+        result = gen_mean_p1(test_batch)
+        expected = torch.mean(test_batch, dim=1)
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_p1_tensor(self, test_tensor, gen_mean_p1):
+        """Test GeneralizedMeanEAggregation with p=1.0 on a single tensor"""
+        result = gen_mean_p1(test_tensor)
+        expected = torch.mean(test_tensor)
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_p2_batch(self, test_batch, gen_mean_p2):
+        """Test GeneralizedMeanEAggregation with p=2.0 on batch data"""
+        # p=2 is the quadratic mean (root mean square)
+        result = gen_mean_p2(test_batch)
+        
+        # Calculate expected output manually
+        expected = torch.zeros(4)
+        for i in range(4):
+            expected[i] = torch.sqrt(torch.mean(test_batch[i]**2))
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_p2_tensor(self, test_tensor, gen_mean_p2):
+        """Test GeneralizedMeanEAggregation with p=2.0 on a single tensor"""
+        result = gen_mean_p2(test_tensor)
+        expected = torch.sqrt(torch.mean(test_tensor**2))
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_special_cases(self):
+        """Test special cases of GeneralizedMeanEAggregation with different p values"""
+        # Test p=0 (geometric mean)
+        gen_mean_p0 = GeneralizedMeanEAggregation(params={"p": 0.0})
+        test_tensor = torch.tensor([0.2, 0.5, 0.8])
+        
+        # For p=0, it's the geometric mean: (x1*x2*...*xn)^(1/n)
+        # We need to avoid zeros, so we'll use a small epsilon
+        epsilon = 1e-7
+        adjusted = torch.clamp(test_tensor, epsilon, 1.0)
+        expected = torch.exp(torch.mean(torch.log(adjusted)))
+        
+        result = gen_mean_p0(test_tensor)
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+        
+        # Test p→∞ (maximum)
+        gen_mean_large = GeneralizedMeanEAggregation(params={"p": 100.0})
+        expected_max = torch.max(test_tensor)
+        result_large = gen_mean_large(test_tensor)
+        
+        assert torch.allclose(result_large, expected_max, atol=1e-2), f"Expected {expected_max}, got {result_large}"
+        
+        # Test p→-∞ (minimum)
+        gen_mean_neg = GeneralizedMeanEAggregation(params={"p": -100.0})
+        expected_min = torch.min(test_tensor)
+        result_neg = gen_mean_neg(test_tensor)
+        
+        assert torch.allclose(result_neg, expected_min, atol=1e-2), f"Expected {expected_min}, got {result_neg}"

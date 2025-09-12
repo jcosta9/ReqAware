@@ -100,8 +100,10 @@ class LogProductAAggregation(Aggregation):
         
         # Adding epsilon for numerical stability
         stable_inputs = inputs + self.eps
-        
-        return torch.sum(torch.log(stable_inputs), dim=-1)
+        log_product_agg =  torch.sum(torch.log(stable_inputs), dim=-1)
+        raw = - log_product_agg
+
+        return 1 - torch.tanh(raw)
     
 class GeneralizedMeanEAggregation(Aggregation):
     """
