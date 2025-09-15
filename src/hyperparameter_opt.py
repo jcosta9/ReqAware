@@ -33,7 +33,7 @@ def objective(trial, base_config, args):
         device = 'cpu'
         config.device = 'cpu'
     else:
-        device = f"{config.device}:{config.device_no}"
+        device = f"{config.device}"
     
     # Sample hyperparameters for this trial
     config.concept_predictor.lr = trial.suggest_float("lr", 0.0001, 0.01, log=True)
@@ -80,15 +80,15 @@ def objective(trial, base_config, args):
     
     # If debug mode, skip actual training to test optimization loop
     if not args.debug:
-        print(f"Starting training on {config.device}:{config.device_no}")
+        print(f"Starting training on {config.device}")
         trainer.train()  # This will train the model
     
     # Get predictions and calculate metrics
     concept_logits, concept_predictions, concept_ground_truth, _ = (
         trainer.concept_predictor_trainer.get_predictions(dataloader=val_loader)
     )
-    validation_acc = accuracy_score(concept_predictions, concept_ground_truth)
-    
+    _, validation_acc = trainer.concept_predictor_trainer.test(dataloader=val_loader)
+    val_acc_test = accuracy_score(concept_predictions, concept_ground_truth)
     # Calculate fuzzy loss using the original fuzzy loss function
     fuzzy_loss_fn = CustomFuzzyLoss(
         base_config.concept_predictor.fuzzy_loss, 
@@ -106,10 +106,9 @@ def objective(trial, base_config, args):
     
     # Print trial results
     print(f"Trial {trial.number}:")
-    print(f"  Learning Rate: {config.concept_predictor.lr}")
     print(f"  Validation Accuracy: {validation_acc:.4f}")
     print(f"  Standard Loss: {standard_loss:.4f}")
-    print(f"  Fuzzy Loss: {fuzzy_loss_value:.4f}")
+    print(f"  Base Fuzzy using default values: {fuzzy_loss_value:.4f}")
     
     # Return metrics as a dictionary
     return validation_acc, standard_loss, fuzzy_loss_value
@@ -130,7 +129,7 @@ def main():
     study_name = f"cbm_optimization_{timestamp}"
     
     # Load base configuration
-    base_config = load_config(Path("files/configs/GTSRB_CBM_config.yaml"))
+    base_config = load_config(Path("files/configs/GTSRB_CBM_config_rules_set1.yaml"))
     
     # Create and configure the study
     # We want to minimize standard_loss and fuzzy rule loss and maximize validation_accuracy

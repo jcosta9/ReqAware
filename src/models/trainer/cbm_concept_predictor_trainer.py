@@ -155,7 +155,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 #     print(f"[MODEL] {progress.desc}")
                 progress.update(1)
 
-                _, correct, total = self.compute_accuracy(outputs, concepts)
+                _, correct, total, _ = self.compute_accuracy(outputs, concepts)
                 running_correct += correct
                 running_total += total
 
@@ -257,7 +257,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                     loss += batch_loss * inputs.size(0)
 
                 # Measuring Accuracy
-                predicted, correct, total = self.compute_accuracy(outputs, concepts)
+                predicted, correct, total, _ = self.compute_accuracy(outputs, concepts)
                 running_correct += correct
                 running_total += total
 

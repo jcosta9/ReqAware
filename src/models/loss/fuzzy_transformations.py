@@ -124,3 +124,13 @@ class GeneralizedMeanEAggregation(Aggregation):
         
         # Root of mean
         return torch.pow(mean_of_powers + self.eps, 1.0 / self.p)
+    
+class ProductAAggregation(Aggregation):
+    """This class implements the all aggregation based on the product t-norm."""
+    def __init__(self):
+        super().__init__()
+    
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        if inputs.dim() < 2:
+            raise ValueError("Product aggregation expects at least a 2D tensor [batch, instances]")
+        return torch.prod(inputs,dim=1)
