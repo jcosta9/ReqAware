@@ -114,7 +114,7 @@ class BaseTrainer(ABC):
         """
         self.early_stopping(val_accuracy, self.model)
 
-        print(val_accuracy, self.best_val_accuracy)
+        print(f"Current Accuracy: {val_accuracy}, Best Accuracy: {self.best_val_accuracy}")
 
         if self.early_stopping.early_stop:
             print("🛑 Early stopping triggered.")  # TODO: move prints to a logger

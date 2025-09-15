@@ -241,20 +241,20 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         y_true = []
         y_pred = []
 
-        loss = 0.0
+        running_loss = 0.0
         running_correct = 0
         running_total = 0
 
         with tqdm.trange(STEPS, desc=f"{mode.title()} Evaluation") as progress:
-            for batch_idx, (idx, inputs, (concepts, _)) in enumerate(self.train_loader):
+            for batch_idx, (idx, inputs, (concepts, _)) in enumerate(dataloader):
                 inputs, concepts = inputs.to(self.device), concepts.to(self.device)
 
                 # Evaluating label_predictor on predicted concepts
                 outputs = self.model(inputs)
 
                 if mode == "val":
-                    batch_loss = self.criterion(outputs, concepts).item()
-                    loss += batch_loss * inputs.size(0)
+                    loss = self.criterion(outputs, concepts)
+                    running_loss += loss.item()
 
                 # Measuring Accuracy
                 predicted, correct, total, _ = self.compute_accuracy(outputs, concepts)
@@ -263,6 +263,12 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
                 y_true.extend(concepts.cpu().numpy())
                 y_pred.extend(predicted.cpu().numpy())
+
+                progress.desc = (
+                    f"{mode.title()} [{batch_idx}/{STEPS}]"
+                    + f" | Loss {loss:.10f} "
+                )
+                progress.update(1)
 
         accuracy = running_correct / running_total
 
@@ -277,7 +283,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             )
             return None, accuracy
 
-        avg_loss = loss / len(dataloader.dataset)
+        avg_loss = running_loss / STEPS
 
         self.writer.add_scalar(
             f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch
