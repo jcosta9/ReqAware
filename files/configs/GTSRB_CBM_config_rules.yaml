@@ -8,7 +8,7 @@ dataset:
     n_labels: 43
     n_concepts: 43
     batch_size: 128
-    num_workers: 4
+    num_workers: 0
     shuffle_dataset: True
     pin_memory: True
     data_path: data/raw/GTSRB/converted

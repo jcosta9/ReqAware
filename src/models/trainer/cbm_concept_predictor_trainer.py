@@ -264,11 +264,12 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 y_true.extend(concepts.cpu().numpy())
                 y_pred.extend(predicted.cpu().numpy())
 
-                progress.desc = (
-                    f"{mode.title()} [{batch_idx}/{STEPS}]"
-                    + f" | Loss {loss:.10f} "
-                )
-                progress.update(1)
+                if mode == "val":
+                    progress.desc = (
+                        f"{mode.title()} [{batch_idx}/{STEPS}]"
+                        + f" | Loss {loss:.10f} "
+                    )
+                    progress.update(1)
 
         accuracy = running_correct / running_total
 

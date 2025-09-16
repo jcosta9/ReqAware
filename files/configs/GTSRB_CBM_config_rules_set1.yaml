@@ -8,11 +8,11 @@ dataset:
     n_labels: 43
     n_concepts: 43
     batch_size: 128
-    num_workers: 1
+    num_workers: 0
     shuffle_dataset: True
     pin_memory: True
     data_path: data/raw/GTSRB/converted
-    val_split: 0.2
+    val_split: 0.01
     concepts_file: data/raw/GTSRB/concepts/concepts_per_class.csv
 concept_predictor:
     log_dir: logs

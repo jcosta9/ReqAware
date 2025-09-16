@@ -5,7 +5,8 @@ import argparse
 from pathlib import Path
 import copy
 from datetime import datetime
-from sklearn.metrics import accuracy_score
+import multiprocessing
+from multiprocessing import Pool
 from torch.nn import BCEWithLogitsLoss
 
 # Project-specific imports
@@ -32,6 +33,7 @@ def objective(trial, base_config, args):
     if not torch.cuda.is_available():
         device = 'cpu'
         config.device = 'cpu'
+        print("using cpu")
     else:
         device = f"{config.device}"
     
@@ -84,11 +86,11 @@ def objective(trial, base_config, args):
         trainer.train()  # This will train the model
     
     # Get predictions and calculate metrics
-    concept_logits, concept_predictions, concept_ground_truth, _ = (
+    concept_logits, _, concept_ground_truth, _ = (
         trainer.concept_predictor_trainer.get_predictions(dataloader=val_loader)
     )
     _, validation_acc = trainer.concept_predictor_trainer.test(dataloader=val_loader)
-    val_acc_test = accuracy_score(concept_predictions, concept_ground_truth)
+
     # Calculate fuzzy loss using the original fuzzy loss function
     fuzzy_loss_fn = CustomFuzzyLoss(
         base_config.concept_predictor.fuzzy_loss, 
@@ -100,7 +102,7 @@ def objective(trial, base_config, args):
     y_true = torch.tensor(concept_ground_truth)
     
     with torch.no_grad():
-        total_loss = fuzzy_loss_fn(logit_tensor, y_true)
+        _ = fuzzy_loss_fn(logit_tensor, y_true)
         standard_loss = fuzzy_loss_fn.last_standard_loss.item()
         fuzzy_loss_value = fuzzy_loss_fn.last_fuzzy_loss.item()
     
@@ -113,6 +115,34 @@ def objective(trial, base_config, args):
     # Return metrics as a dictionary
     return validation_acc, standard_loss, fuzzy_loss_value
 
+def run_optimization(gpu_id, study, study_name, base_config, n_trials, args):
+
+    process_id = os.getpid()
+    print(f"\n[Worker Info] Process ID: {process_id} | Running on GPU: {gpu_id}")
+    print(f"[Worker Info] Will run {n_trials} trials for study: {study_name}")
+
+    base_config.device = f"cuda:{gpu_id}"
+    
+    # Run optimization
+    study.optimize(
+        lambda trial: objective(trial, base_config, args), 
+        n_trials=n_trials,
+    )
+    
+    # Get Pareto front after optimization
+    pareto_front = study.best_trials
+    
+    return pareto_front
+
+def run_worker(worker_args):
+    """Worker function that runs optimization on a specific GPU.
+    
+    Args:
+        worker_args: Tuple containing (gpu_id, study_name, base_config, n_trials, args)
+    """
+    gpu_id, study, study_name, base_config, n_trials, args = worker_args
+    return run_optimization(gpu_id, study, study_name, base_config, n_trials, args)
+
 def main():
     parser = argparse.ArgumentParser(description="Hyperparameter optimization with Optuna")
     parser.add_argument("--n-trials", type=int, default=20, 
@@ -121,44 +151,75 @@ def main():
                         help="Directory to save results")
     parser.add_argument("--debug", action="store_true",
                         help="Run in debug mode (skip training)")
+    parser.add_argument("--gpu_ids", type=str, default="0", help="The set of gpu ids to use. Each is assigned a worker that does some optimization.")
+    parser.add_argument("--study_name", type=str, default=datetime.now().strftime("%Y%m%d_%H%M%S"), help="Sets the study. The study will be stored under cbm_optimization_study_name")
     args = parser.parse_args()
     
     # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    study_name = f"cbm_optimization_{timestamp}"
+    study_name = f"cbm_optimization_{args.study_name}"
     
     # Load base configuration
-    base_config = load_config(Path("files/configs/GTSRB_CBM_config_rules_set1.yaml"))
-    
-    # Create and configure the study
-    # We want to minimize standard_loss and fuzzy rule loss and maximize validation_accuracy
+    base_config = load_config(Path("files/configs/GTSRB_CBM_config_rules.yaml"))
+    gpu_ids = [int(id) for id in args.gpu_ids.split(",")]
+
+    # calculates the number of trials per process
+    if gpu_ids:
+        n_trial_process = args.n_trials / len(gpu_ids)
+    else:
+        n_trial_process = args.n_trials
+
     study = optuna.create_study(
         study_name=study_name,
         storage=f"sqlite:///{os.path.join(args.output_dir, study_name)}.db",
         load_if_exists=True,
         directions=["minimize", "maximize", "minimize"]  # standard_loss, accuracy, fuzzy_loss
     )
+    worker_args = [(gpu_id, study, study_name, base_config, n_trial_process, args) for gpu_id in gpu_ids]
+    with Pool(processes=len(gpu_ids)) as pool:
+        results = pool.map(run_worker, worker_args)
+
+       # Process results from all workers
+    print("\n======= COMBINED RESULTS FROM ALL WORKERS =======")
     
-    # Run optimization
-    study.optimize(
-        lambda trial: objective(trial, base_config, args), 
-        n_trials=args.n_trials,
-    )
+    # Collect all trials from all workers
+    all_pareto_trials = []
+    for i, worker_pareto_front in enumerate(results):
+        gpu_id = gpu_ids[i]
+        print(f"\nGPU {gpu_id} found {len(worker_pareto_front)} trials on its Pareto front")
+        all_pareto_trials.extend(worker_pareto_front)
     
-    # Get Pareto front after optimization
-    pareto_front = study.best_trials
+    # Print combined Pareto front
+    print(f"\nCombined Pareto front has {len(all_pareto_trials)} trials")
     
-    # Print best hyperparameters
-    print("\nBest trials (Pareto front):")
-    for i, trial in enumerate(pareto_front):
-        print(f"\nTrial {i+1}:")
+    # Sort by accuracy (descending)
+    sorted_trials = sorted(all_pareto_trials, key=lambda t: t.values[0], reverse=True)
+    
+    # Print best trials
+    print("\nTop 5 trials by accuracy:")
+    for i, trial in enumerate(sorted_trials[:2]):
+        print(f"\nTop Trial {i+1}:")
         print(f"  Validation Accuracy: {trial.values[0]:.4f}")
         print(f"  Validation Standard Loss: {trial.values[1]:.4f}")
         print(f"  Fuzzy Loss: {trial.values[2]:.4f}")
         print("  Parameters:")
         for key, value in trial.params.items():
             print(f"    {key}: {value}")
+    
+    # Find best trial for each metric
+    best_standard_loss = min(all_pareto_trials, key=lambda t: t.values[1])
+    best_fuzzy_loss = min(all_pareto_trials, key=lambda t: t.values[2])
+    
+    print("\nBest Standard Loss:")
+    print(f"  Validation Accuracy: {best_standard_loss.values[0]:.4f}")
+    print(f"  Validation Standard Loss: {best_standard_loss.values[1]:.4f}")
+    print(f"  Fuzzy Loss: {best_standard_loss.values[2]:.4f}")
+    
+    print("\nBest Fuzzy Loss:")
+    print(f"  Validation Accuracy: {best_fuzzy_loss.values[0]:.4f}")
+    print(f"  Validation Standard Loss: {best_fuzzy_loss.values[1]:.4f}")
+    print(f"  Fuzzy Loss: {best_fuzzy_loss.values[2]:.4f}")
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method(method="spawn")
     main()
