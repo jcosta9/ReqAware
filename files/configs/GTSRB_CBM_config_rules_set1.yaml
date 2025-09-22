@@ -78,9 +78,7 @@ concept_predictor:
                         params:
                             eps: 1e-8
                     e_aggregation:
-                        class_name: generalized_mean_e_aggregation
-                        params:
-                            p: 1.0
+                        class_name: prop_sum
                 params: 
                     main_colour_indices: [0,1,2,3]
             exactly_one_shape:
@@ -102,9 +100,7 @@ concept_predictor:
                         params:
                             eps: 1e-8
                     e_aggregation:
-                        class_name: generalized_mean_e_aggregation
-                        params:
-                            p: 1.0
+                        class_name: prop_sum
                 params: 
                     shape_indices: [6,7,8,9]
             at_most_one_warning:
