@@ -1,5 +1,6 @@
 import pytest
 import torch
+import pandas as pd
 from models.loss.fuzzy_transformations import (
     GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation, YagerTNorm, YagerTConorm, LogProductAAggregation, GeneralizedMeanEAggregation
 )
@@ -617,7 +618,7 @@ class TestYagerOperators:
 class TestAdvancedAggregations:
     @pytest.fixture
     def test_batch(self):
-        return torch.tensor([[0,0,0,1], [1,0,0,1], [1,1,1,0], [0,1,1,0], [1,1,1,1]])
+        return torch.tensor([[0.,0.,0.,1.], [1.,0.,0.,1.], [1.,1.,1.,0.], [0.,1.,1.,0.], [1.,1.,1.,1.]])
     
     @pytest.fixture
     def test_tensor(self):
@@ -642,12 +643,6 @@ class TestAdvancedAggregations:
         
         # Calculate expected output manually
         expected = torch.tensor([0.,0.,0.,0.,1.])
-        for i in range(4):
-            # Apply epsilon to avoid log(0)
-            epsilon = 1e-7
-            adjusted = torch.clamp(test_batch[i], epsilon, 1-epsilon)
-            expected[i] = 1 - torch.exp(torch.mean(torch.log(1 - adjusted)))
-
         assert torch.allclose(result, expected, atol=1e-4), f"Expected {expected}, got {result}"
     
     def test_log_product_aggregation_tensor(self, test_tensor, log_product_aggregation):
@@ -682,8 +677,8 @@ class TestAdvancedAggregations:
         result = gen_mean_p2(test_batch)
         
         # Calculate expected output manually
-        expected = torch.zeros(4)
-        for i in range(4):
+        expected = torch.zeros(5)
+        for i in range(5):
             expected[i] = torch.sqrt(torch.mean(test_batch[i]**2))
         
         assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
@@ -723,3 +718,159 @@ class TestAdvancedAggregations:
         result_neg = gen_mean_neg(test_tensor)
         
         assert torch.allclose(result_neg, expected_min, atol=1e-2), f"Expected {expected_min}, got {result_neg}"
+
+class TestExactlyOneMainColourWithRealData:
+    @pytest.fixture
+    def csv_data(self):
+        """Load test data from CSV file"""
+        df = pd.read_csv("/vol/home-vol2/se/reichmei/Schreitisch/trainReq/test_batch.csv")
+        # Assuming CSV has concept columns we need to extract
+        # Adjust column indices as needed based on your CSV structure
+        concepts = df.values  # Skip the first column if it's an ID or label
+        return torch.tensor(concepts, dtype=torch.float32)
+    
+    @pytest.fixture
+    def param_combinations(self):
+        """Define different parameter combinations to test"""
+        return [
+            {
+                "p_norm": 1.0,
+                "p_mean": 1.0,
+                "description": "Yager(p=1) & GenMean(p=1) - equivalent to Lukasiewicz and arithmetic mean"
+            },
+            {
+                "p_norm": 2.0,
+                "p_mean": 1.0,
+                "description": "Yager(p=2) & GenMean(p=1) - quadratic norm with arithmetic mean"
+            },
+            {
+                "p_norm": 1.0,
+                "p_mean": 2.0,
+                "description": "Yager(p=1) & GenMean(p=2) - Lukasiewicz with quadratic mean"
+            },
+            {
+                "p_norm": 3.0,
+                "p_mean": 3.0,
+                "description": "Yager(p=3) & GenMean(p=3) - cubic norm and mean"
+            }
+        ]
+    
+    def test_exactly_one_main_colour_with_csv_data(self, csv_data, param_combinations):
+        """Test ExactlyOneMainColour rule with different parameter combinations on real data"""
+        # Define main color indices - adjust based on your data structure
+        main_colour_indices = [0, 1, 2, 3]  # Assuming first 4 columns are main colors
+        
+        # Store results for comparison
+        results = []
+        
+        print("\n===== EXACTLY ONE MAIN COLOUR RULE WITH DIFFERENT PARAMETERS =====")
+        
+        # For each parameter combination
+        for params in param_combinations:
+            p_norm = params["p_norm"]
+            p_mean = params["p_mean"]
+            
+            # Create operators with current parameters
+            t_norm = YagerTNorm(p=p_norm)
+            t_conorm = YagerTConorm(p=p_norm)
+            e_aggregation = GeneralizedMeanEAggregation(p= p_mean)
+            a_aggregation = LogProductAAggregation()
+            
+            # Create rule
+            rule = ExactlyOneMainColour(
+                t_norm=t_norm,
+                t_conorm=t_conorm,
+                e_aggregation=e_aggregation,
+                a_aggregation=a_aggregation,
+                params={'main_colour_indices': main_colour_indices}
+            )
+            
+            # Apply rule to data
+            rule_output = rule(csv_data)
+            
+            # Store results
+            results.append({
+                "params": params,
+                "output": rule_output
+            })
+            
+            # Print summary statistics
+            print(f"\nParameters: {params['description']}")
+            print(f"  Mean violation: {rule_output.mean().item():.4f}")
+            print(f"  Min violation: {rule_output.min().item():.4f}")
+            print(f"  Max violation: {rule_output.max().item():.4f}")
+            print(f"  Samples with high violation (>0.8): {(rule_output > 0.8).sum().item()}")
+            print(f"  Samples with low violation (<0.2): {(rule_output < 0.2).sum().item()}")
+        
+        # Compare results between different parameter settings
+        print("\n===== PARAMETER SENSITIVITY ANALYSIS =====")
+        for i in range(len(results)):
+            for j in range(i+1, len(results)):
+                param_i = results[i]["params"]
+                param_j = results[j]["params"]
+                
+                # Calculate difference statistics
+                diff = results[i]["output"] - results[j]["output"]
+                abs_diff = torch.abs(diff)
+                
+                print(f"\nComparing {param_i['description']} vs {param_j['description']}:")
+                print(f"  Mean absolute difference: {abs_diff.mean().item():.4f}")
+                print(f"  Max absolute difference: {abs_diff.max().item():.4f}")
+                print(f"  Samples with significant difference (>0.2): {(abs_diff > 0.2).sum().item()}")
+    
+    def test_p_parameter_sensitivity(self, csv_data):
+        """Test sensitivity of the p parameter in Yager norms with fixed aggregations"""
+        # Define main color indices - adjust based on your data structure
+        main_colour_indices = [0, 1, 2, 3]  # Assuming first 4 columns are main colors
+        
+        # Fixed aggregations
+        e_aggregation = GeneralizedMeanEAggregation(params={"p": 1.0})
+        a_aggregation = LogProductAAggregation()
+        
+        # Range of p values to test
+        p_values = [0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+        
+        print("\n===== P-VALUE SENSITIVITY ANALYSIS =====")
+        
+        previous_output = None
+        
+        for p in p_values:
+            # Create operators with current p value
+            t_norm = YagerTNorm(p=p)
+            t_conorm = YagerTConorm(p=p)
+            
+            # Create rule
+            rule = ExactlyOneMainColour(
+                t_norm=t_norm,
+                t_conorm=t_conorm,
+                e_aggregation=e_aggregation,
+                a_aggregation=a_aggregation,
+                params={'main_colour_indices': main_colour_indices}
+            )
+            
+            # Apply rule to data
+            rule_output = rule(csv_data)
+            
+            # Print summary statistics
+            print(f"\np={p}:")
+            print(f"  Mean violation: {rule_output.mean().item():.4f}")
+            print(f"  Min violation: {rule_output.min().item():.4f}")
+            print(f"  Max violation: {rule_output.max().item():.4f}")
+            
+            # Compare with previous p value
+            if previous_output is not None:
+                diff = rule_output - previous_output
+                abs_diff = torch.abs(diff)
+                
+                print(f"  Change from p={p_values[p_values.index(p)-1]}:")
+                print(f"    Mean absolute difference: {abs_diff.mean().item():.4f}")
+                print(f"    Max absolute difference: {abs_diff.max().item():.4f}")
+                
+                # Find samples with largest changes
+                if len(csv_data) > 5:  # Only if we have enough samples
+                    top5_indices = torch.argsort(abs_diff, descending=True)[:5]
+                    print(f"    Top 5 largest changes (sample idx, old value → new value, diff):")
+                    for idx in top5_indices:
+                        print(f"      #{idx}: {previous_output[idx].item():.4f} → {rule_output[idx].item():.4f}, diff: {diff[idx].item():.4f}")
+            
+            previous_output = rule_output
