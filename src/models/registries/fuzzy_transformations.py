@@ -9,7 +9,8 @@ from models.loss.fuzzy_transformations import (
     YagerTConorm,
     LogProductAAggregation,
     GeneralizedMeanEAggregation,
-    ProductAAggregation
+    ProductAAggregation,
+    ProbSumAggregator
 )
 
 TNORM_REGISTRY = {
@@ -32,5 +33,6 @@ AAGGREGATION_REGISTRY = {
 
 EAGGREGATION_REGISTRY = {
     "godel_e_aggregation": GodelEAggregation,
-    "generalized_mean_e_aggregation": GeneralizedMeanEAggregation
+    "generalized_mean_e_aggregation": GeneralizedMeanEAggregation,
+    "prop_sum" : ProbSumAggregator
 }

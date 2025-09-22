@@ -99,7 +99,7 @@ class LogProductAAggregation(Aggregation):
              raise ValueError("LogProductAggregation expects at least a 2D tensor [batch, instances]")
         
         # Adding epsilon for numerical stability
-        stable_inputs = inputs + self.eps
+        stable_inputs = torch.clamp(inputs, self.eps, 1-self.eps)
         log_product_agg =  torch.sum(torch.log(stable_inputs), dim=-1)
         raw = - log_product_agg
 
@@ -124,6 +124,18 @@ class GeneralizedMeanEAggregation(Aggregation):
         
         # Root of mean
         return torch.pow(mean_of_powers + self.eps, 1.0 / self.p)
+
+class ProbSumAggregator(Aggregation):
+
+    def __init__(self):
+        super().__init__()
+    
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        if inputs.dim() < 2:
+             raise ValueError("ProbSumAggregator expects at least a 2D tensor [batch, instances]")
+        
+        return 1 - torch.prod(1-inputs, dim=-1)
+
     
 class ProductAAggregation(Aggregation):
     """This class implements the all aggregation based on the product t-norm."""
