@@ -58,7 +58,8 @@ class CustomFuzzyLoss(nn.Module):
 
             # Weight it by its specific lambda and add to the total
             total_fuzzy_loss += self.fuzzy_lambdas[rule_name] * rule_loss
-            if rule_loss > 1 or torch.isnan(rule_loss):
+            if torch.isnan(rule_loss):
                 print(f"for rule {rule_name} loss bigger than 1 or nan {rule_loss}")
+                raise RuntimeError(f"NaN detected in fuzzy loss in rule {rule_name}")
         self.last_fuzzy_loss = total_fuzzy_loss.detach()
         return standard_loss + total_fuzzy_loss

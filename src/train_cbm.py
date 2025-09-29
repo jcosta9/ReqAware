@@ -20,7 +20,7 @@ def load_config(config_path) -> CBMTrainerConfig:
 
 
 def main():
-    config = load_config(Path("files/configs/GTSRB_CBM_config.yaml"))
+    config = load_config(Path("files/configs/GTSRB_CBM_config_optimalV3.yaml"))
 
     # Dataset
     dataset_factory = config.dataset.factory(

@@ -47,11 +47,11 @@ def objective(trial, base_config, args):
         p_key = f"p_{rule_name}"
         
         # Sample lambda value for this rule
-        rules[rule_name].fuzzy_lambda = trial.suggest_float(lambda_key, 0.1, 0.99)
+        rules[rule_name].fuzzy_lambda = trial.suggest_float(lambda_key, 0.0001, 0.7)
         
         # Sample p value for operators if they exist
         if hasattr(rules[rule_name], 'operators'):
-            p_value = trial.suggest_float(p_key, 1.0, 4.0)
+            p_value = trial.suggest_float(p_key, 1.01, 30.0)
             for op_name in ['t_norm', 't_conorm', 'e_aggregation', 'a_aggregation']:
                 if hasattr(rules[rule_name].operators, op_name):
                     op = getattr(rules[rule_name].operators, op_name)
@@ -81,10 +81,17 @@ def objective(trial, base_config, args):
     )
     
     # If debug mode, skip actual training to test optimization loop
-    if not args.debug:
-        print(f"Starting training on {config.device}")
-        trainer.train()  # This will train the model
-    
+    try:
+        if not args.debug:
+            print(f"Starting training on {config.device}")
+            trainer.train()  # This will train the model
+    except RuntimeError as e:
+            if "encountered nan or inf" in str(e).lower() or "nan" in str(e).lower():
+                print(f"Trial {trial.number} failed due to NaN values: {e}")
+                raise optuna.exceptions.TrialPruned()
+            else:
+                # Re-raise other runtime errors
+                raise
     # Get predictions and calculate metrics
     concept_logits, _, concept_ground_truth, _ = (
         trainer.concept_predictor_trainer.get_predictions(dataloader=val_loader)
@@ -106,14 +113,15 @@ def objective(trial, base_config, args):
         standard_loss = fuzzy_loss_fn.last_standard_loss.item()
         fuzzy_loss_value = fuzzy_loss_fn.last_fuzzy_loss.item()
     
+    torch.cuda.empty_cache()
     # Print trial results
     print(f"Trial {trial.number}:")
     print(f"  Validation Accuracy: {validation_acc:.4f}")
-    print(f"  Standard Loss: {standard_loss:.4f}")
+    print(f"  Standard Loss: {standard_loss:.4f}")  
     print(f"  Base Fuzzy using default values: {fuzzy_loss_value:.4f}")
     
     # Return metrics as a dictionary
-    return validation_acc, standard_loss, fuzzy_loss_value
+    return validation_acc
 
 def run_optimization(gpu_id, study, study_name, base_config, n_trials, args):
 
@@ -173,7 +181,7 @@ def main():
         study_name=study_name,
         storage=f"sqlite:///{os.path.join(args.output_dir, study_name)}.db",
         load_if_exists=True,
-        directions=["minimize", "maximize", "minimize"]  # standard_loss, accuracy, fuzzy_loss
+        directions=["maximize"]  #  accuracy
     )
     worker_args = [(gpu_id, study, study_name, base_config, n_trial_process, args) for gpu_id in gpu_ids]
     with Pool(processes=len(gpu_ids)) as pool:
