@@ -44,7 +44,6 @@ def main():
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
-        log_dir=config.log_dir,
         device=config.device,
     ).train()
 
