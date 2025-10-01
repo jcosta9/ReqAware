@@ -43,10 +43,11 @@ class CustomFuzzyLoss(nn.Module):
                 raise Exception(f"Fuzzy rule {rule_name} could not be instantiated.")
 
     def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
-        y_pred = torch.sigmoid(y_pred)
         standard_loss = self.current_loss_fn(y_pred, y_true)
-        # updating the loss to make it visible outside the class
         self.last_standard_loss = standard_loss.detach()
+        # only transforming the logits after calculating the current standard loss
+        y_pred = torch.sigmoid(y_pred)
+        # updating the loss to make it visible outside the class
 
         total_fuzzy_loss = torch.tensor(0.0, device=y_pred.device)
         self.last_individual_losses.clear()
@@ -57,6 +58,8 @@ class CustomFuzzyLoss(nn.Module):
 
             # Weight it by its specific lambda and add to the total
             total_fuzzy_loss += self.fuzzy_lambdas[rule_name] * rule_loss
-
+            if torch.isnan(rule_loss):
+                print(f"for rule {rule_name} loss bigger than 1 or nan {rule_loss}")
+                raise RuntimeError(f"NaN detected in fuzzy loss in rule {rule_name}")
         self.last_fuzzy_loss = total_fuzzy_loss.detach()
         return standard_loss + total_fuzzy_loss

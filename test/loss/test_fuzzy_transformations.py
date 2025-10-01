@@ -1,7 +1,8 @@
 import pytest
 import torch
+import pandas as pd
 from models.loss.fuzzy_transformations import (
-    GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation
+    GodelTNorm, GodelTConorm, GodelAAggregation, GodelEAggregation, YagerTNorm, YagerTConorm, LogProductAAggregation, GeneralizedMeanEAggregation
 )
 from models.loss.custom_rules import (
     ExactlyOneShape, ExactlyOneMainColour, AtMostOneBorderColour, BetweenTwoAndThreeNumbers, AtMostOneWarning, NoSymbolsExactlyTwoColours, WarningSignExclusivity, WarningImpliesMainWhite
@@ -379,7 +380,7 @@ class TestFuzzyRules:
         # Edge case 1: Single tensor input (non-batch)
         # Format: [warnings..., other symbols...]
         test_tensor = torch.tensor([1, 0, 0, 0, 0])  # One warning, no other symbols (compliant)
-        expected_loss = torch.tensor([0])
+        expected_loss = torch.tensor(0)
         
         rule = WarningSignExclusivity(
             t_norm=godel_operators['t_norm'],
@@ -542,3 +543,334 @@ class TestFuzzyRules:
                     'main_colour_white': [2, 3]  # Multiple white indices (invalid)
                 }
             )
+
+class TestYagerOperators:
+    @pytest.fixture
+    def test_batch(self):
+        return torch.tensor([[0,0,0,1], [1,0,0,1], [1,1,1,0], [0,1,1,0]])
+    
+    @pytest.fixture
+    def test_tensor(self):
+        return torch.tensor([0,1,0])
+    
+    @pytest.fixture
+    def yager_tnorm_p1(self):
+        return YagerTNorm(p=1.0, eps=0)
+    
+    @pytest.fixture
+    def yager_tnorm_p2(self):
+        return YagerTNorm(p = 2.0, eps=0)
+    
+    @pytest.fixture
+    def yager_tconorm_p1(self):
+        return YagerTConorm(p=1.0, eps=0)
+    
+    @pytest.fixture
+    def yager_tconorm_p2(self):
+        return YagerTConorm(p = 2.0, eps=0)
+    
+    def test_yager_tnorm_p1(self, yager_tnorm_p1):
+        """Test YagerTNorm with p=1.0"""
+        a = torch.tensor([0,1,0,1])
+        b = torch.tensor([0,0,1,1])
+        # YagerTNorm with p=1 should be equivalent to max(0, a + b - 1)
+        expected = torch.tensor([0.0,0.0,0.0,1.0])
+        assert torch.allclose(yager_tnorm_p1(a,b), expected), f"Expected {expected}, got {yager_tnorm_p1(a,b)}"
+        assert torch.allclose(yager_tnorm_p1(torch.tensor(0.7), torch.tensor(0.4)), torch.tensor(0.1)), "Should be max(0, 0.7+0.4-1)"
+    
+    def test_yager_tnorm_p2(self, yager_tnorm_p2):
+        """Test YagerTNorm with p=2.0"""
+        a = torch.tensor([0.0, 0.3, 0.5, 1.0])
+        b = torch.tensor([0.0, 0.6, 0.5, 1.0])
+        
+        # Calculate expected output manually for p=2:
+        # max(0, 1 - ((1-a)^p + (1-b)^p)^(1/p))
+        expected = torch.zeros(4)
+        for i in range(4):
+            complement_sum = (1-a[i])**2 + (1-b[i])**2
+            expected[i] = max(0, 1 - complement_sum**(1/2))
+        
+        assert torch.allclose(yager_tnorm_p2(a,b), expected, atol=1e-5), f"Expected {expected}, got {yager_tnorm_p2(a,b)}"
+    
+    def test_yager_tconorm_p1(self, yager_tconorm_p1):
+        """Test YagerTConorm with p=1.0"""
+        a = torch.tensor([0,1,0,1])
+        b = torch.tensor([0,0,1,1])
+        # YagerTConorm with p=1 should be equivalent to min(1, a + b)
+        expected = torch.tensor([0.,1.,1.,1.])
+        assert torch.allclose(yager_tconorm_p1(a,b), expected), f"Expected {expected}, got {yager_tconorm_p1(a,b)}"
+        assert torch.allclose(yager_tconorm_p1(torch.tensor(0.7), torch.tensor(0.4)), torch.tensor(1.0)), "Should be min(1, 0.7+0.4)"
+    
+    def test_yager_tconorm_p2(self, yager_tconorm_p2):
+        """Test YagerTConorm with p=2.0"""
+        a = torch.tensor([0.0, 0.3, 0.5, 1.0])
+        b = torch.tensor([0.0, 0.6, 0.5, 1.0])
+        
+        # Calculate expected output manually for p=2:
+        # min(1, (a^p + b^p)^(1/p))
+        expected = torch.zeros(4)
+        for i in range(4):
+            sum_powers = a[i]**2 + b[i]**2
+            expected[i] = min(1, sum_powers**(1/2))
+        
+        assert torch.allclose(yager_tconorm_p2(a,b), expected, atol=1e-5), f"Expected {expected}, got {yager_tconorm_p2(a,b)}"
+    
+class TestAdvancedAggregations:
+    @pytest.fixture
+    def test_batch(self):
+        return torch.tensor([[0.,0.,0.,1.], [1.,0.,0.,1.], [1.,1.,1.,0.], [0.,1.,1.,0.], [1.,1.,1.,1.]])
+    
+    @pytest.fixture
+    def test_tensor(self):
+        return torch.tensor([0,1,0])
+    
+    @pytest.fixture
+    def log_product_aggregation(self):
+        return LogProductAAggregation()
+    
+    @pytest.fixture
+    def gen_mean_p1(self):
+        return GeneralizedMeanEAggregation(p=1.0)
+    
+    @pytest.fixture
+    def gen_mean_p2(self):
+        return GeneralizedMeanEAggregation(p = 2.0)
+    
+    def test_log_product_aggregation_batch(self, test_batch, log_product_aggregation):
+        """Test LogProductAAggregation on batch data"""
+        # LogProductAAggregation is 1 - exp(mean(log(1-x_i)))
+        result = log_product_aggregation(test_batch)
+        
+        # Calculate expected output manually
+        expected = torch.tensor([0.,0.,0.,0.,1.])
+        assert torch.allclose(result, expected, atol=1e-4), f"Expected {expected}, got {result}"
+    
+    def test_log_product_aggregation_tensor(self, test_tensor, log_product_aggregation):
+        """Test LogProductAAggregation on a single tensor"""
+        result = log_product_aggregation(test_tensor)
+        
+        # Calculate expected output manually
+        epsilon = 1e-7
+        adjusted = torch.clamp(test_tensor, epsilon, 1-epsilon)
+        expected = 1 - torch.exp(torch.mean(torch.log(1 - adjusted)))
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_p1_batch(self, test_batch, gen_mean_p1):
+        """Test GeneralizedMeanEAggregation with p=1.0 on batch data"""
+        # p=1 is the arithmetic mean
+        result = gen_mean_p1(test_batch)
+        expected = torch.mean(test_batch, dim=1)
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_p1_tensor(self, test_tensor, gen_mean_p1):
+        """Test GeneralizedMeanEAggregation with p=1.0 on a single tensor"""
+        result = gen_mean_p1(test_tensor)
+        expected = torch.mean(test_tensor)
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_p2_batch(self, test_batch, gen_mean_p2):
+        """Test GeneralizedMeanEAggregation with p=2.0 on batch data"""
+        # p=2 is the quadratic mean (root mean square)
+        result = gen_mean_p2(test_batch)
+        
+        # Calculate expected output manually
+        expected = torch.zeros(5)
+        for i in range(5):
+            expected[i] = torch.sqrt(torch.mean(test_batch[i]**2))
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_p2_tensor(self, test_tensor, gen_mean_p2):
+        """Test GeneralizedMeanEAggregation with p=2.0 on a single tensor"""
+        result = gen_mean_p2(test_tensor)
+        expected = torch.sqrt(torch.mean(test_tensor**2))
+        
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+    
+    def test_gen_mean_special_cases(self):
+        """Test special cases of GeneralizedMeanEAggregation with different p values"""
+        # Test p=0 (geometric mean)
+        gen_mean_p0 = GeneralizedMeanEAggregation(params={"p": 0.0})
+        test_tensor = torch.tensor([0.2, 0.5, 0.8])
+        
+        # For p=0, it's the geometric mean: (x1*x2*...*xn)^(1/n)
+        # We need to avoid zeros, so we'll use a small epsilon
+        epsilon = 1e-7
+        adjusted = torch.clamp(test_tensor, epsilon, 1.0)
+        expected = torch.exp(torch.mean(torch.log(adjusted)))
+        
+        result = gen_mean_p0(test_tensor)
+        assert torch.allclose(result, expected, atol=1e-5), f"Expected {expected}, got {result}"
+        
+        # Test p→∞ (maximum)
+        gen_mean_large = GeneralizedMeanEAggregation(params={"p": 100.0})
+        expected_max = torch.max(test_tensor)
+        result_large = gen_mean_large(test_tensor)
+        
+        assert torch.allclose(result_large, expected_max, atol=1e-2), f"Expected {expected_max}, got {result_large}"
+        
+        # Test p→-∞ (minimum)
+        gen_mean_neg = GeneralizedMeanEAggregation(params={"p": -100.0})
+        expected_min = torch.min(test_tensor)
+        result_neg = gen_mean_neg(test_tensor)
+        
+        assert torch.allclose(result_neg, expected_min, atol=1e-2), f"Expected {expected_min}, got {result_neg}"
+
+class TestExactlyOneMainColourWithRealData:
+    @pytest.fixture
+    def csv_data(self):
+        """Load test data from CSV file"""
+        df = pd.read_csv("/vol/home-vol2/se/reichmei/Schreitisch/trainReq/test_batch.csv")
+        # Assuming CSV has concept columns we need to extract
+        # Adjust column indices as needed based on your CSV structure
+        concepts = df.values  # Skip the first column if it's an ID or label
+        return torch.tensor(concepts, dtype=torch.float32)
+    
+    @pytest.fixture
+    def param_combinations(self):
+        """Define different parameter combinations to test"""
+        return [
+            {
+                "p_norm": 1.0,
+                "p_mean": 1.0,
+                "description": "Yager(p=1) & GenMean(p=1) - equivalent to Lukasiewicz and arithmetic mean"
+            },
+            {
+                "p_norm": 2.0,
+                "p_mean": 1.0,
+                "description": "Yager(p=2) & GenMean(p=1) - quadratic norm with arithmetic mean"
+            },
+            {
+                "p_norm": 1.0,
+                "p_mean": 2.0,
+                "description": "Yager(p=1) & GenMean(p=2) - Lukasiewicz with quadratic mean"
+            },
+            {
+                "p_norm": 3.0,
+                "p_mean": 3.0,
+                "description": "Yager(p=3) & GenMean(p=3) - cubic norm and mean"
+            }
+        ]
+    
+    def test_exactly_one_main_colour_with_csv_data(self, csv_data, param_combinations):
+        """Test ExactlyOneMainColour rule with different parameter combinations on real data"""
+        # Define main color indices - adjust based on your data structure
+        main_colour_indices = [0, 1, 2, 3]  # Assuming first 4 columns are main colors
+        
+        # Store results for comparison
+        results = []
+        
+        print("\n===== EXACTLY ONE MAIN COLOUR RULE WITH DIFFERENT PARAMETERS =====")
+        
+        # For each parameter combination
+        for params in param_combinations:
+            p_norm = params["p_norm"]
+            p_mean = params["p_mean"]
+            
+            # Create operators with current parameters
+            t_norm = YagerTNorm(p=p_norm)
+            t_conorm = YagerTConorm(p=p_norm)
+            e_aggregation = GeneralizedMeanEAggregation(p= p_mean)
+            a_aggregation = LogProductAAggregation()
+            
+            # Create rule
+            rule = ExactlyOneMainColour(
+                t_norm=t_norm,
+                t_conorm=t_conorm,
+                e_aggregation=e_aggregation,
+                a_aggregation=a_aggregation,
+                params={'main_colour_indices': main_colour_indices}
+            )
+            
+            # Apply rule to data
+            rule_output = rule(csv_data)
+            
+            # Store results
+            results.append({
+                "params": params,
+                "output": rule_output
+            })
+            
+            # Print summary statistics
+            print(f"\nParameters: {params['description']}")
+            print(f"  Mean violation: {rule_output.mean().item():.4f}")
+            print(f"  Min violation: {rule_output.min().item():.4f}")
+            print(f"  Max violation: {rule_output.max().item():.4f}")
+            print(f"  Samples with high violation (>0.8): {(rule_output > 0.8).sum().item()}")
+            print(f"  Samples with low violation (<0.2): {(rule_output < 0.2).sum().item()}")
+        
+        # Compare results between different parameter settings
+        print("\n===== PARAMETER SENSITIVITY ANALYSIS =====")
+        for i in range(len(results)):
+            for j in range(i+1, len(results)):
+                param_i = results[i]["params"]
+                param_j = results[j]["params"]
+                
+                # Calculate difference statistics
+                diff = results[i]["output"] - results[j]["output"]
+                abs_diff = torch.abs(diff)
+                
+                print(f"\nComparing {param_i['description']} vs {param_j['description']}:")
+                print(f"  Mean absolute difference: {abs_diff.mean().item():.4f}")
+                print(f"  Max absolute difference: {abs_diff.max().item():.4f}")
+                print(f"  Samples with significant difference (>0.2): {(abs_diff > 0.2).sum().item()}")
+    
+    def test_p_parameter_sensitivity(self, csv_data):
+        """Test sensitivity of the p parameter in Yager norms with fixed aggregations"""
+        # Define main color indices - adjust based on your data structure
+        main_colour_indices = [0, 1, 2, 3]  # Assuming first 4 columns are main colors
+        
+        # Fixed aggregations
+        e_aggregation = GeneralizedMeanEAggregation(params={"p": 1.0})
+        a_aggregation = LogProductAAggregation()
+        
+        # Range of p values to test
+        p_values = [0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+        
+        print("\n===== P-VALUE SENSITIVITY ANALYSIS =====")
+        
+        previous_output = None
+        
+        for p in p_values:
+            # Create operators with current p value
+            t_norm = YagerTNorm(p=p)
+            t_conorm = YagerTConorm(p=p)
+            
+            # Create rule
+            rule = ExactlyOneMainColour(
+                t_norm=t_norm,
+                t_conorm=t_conorm,
+                e_aggregation=e_aggregation,
+                a_aggregation=a_aggregation,
+                params={'main_colour_indices': main_colour_indices}
+            )
+            
+            # Apply rule to data
+            rule_output = rule(csv_data)
+            
+            # Print summary statistics
+            print(f"\np={p}:")
+            print(f"  Mean violation: {rule_output.mean().item():.4f}")
+            print(f"  Min violation: {rule_output.min().item():.4f}")
+            print(f"  Max violation: {rule_output.max().item():.4f}")
+            
+            # Compare with previous p value
+            if previous_output is not None:
+                diff = rule_output - previous_output
+                abs_diff = torch.abs(diff)
+                
+                print(f"  Change from p={p_values[p_values.index(p)-1]}:")
+                print(f"    Mean absolute difference: {abs_diff.mean().item():.4f}")
+                print(f"    Max absolute difference: {abs_diff.max().item():.4f}")
+                
+                # Find samples with largest changes
+                if len(csv_data) > 5:  # Only if we have enough samples
+                    top5_indices = torch.argsort(abs_diff, descending=True)[:5]
+                    print(f"    Top 5 largest changes (sample idx, old value → new value, diff):")
+                    for idx in top5_indices:
+                        print(f"      #{idx}: {previous_output[idx].item():.4f} → {rule_output[idx].item():.4f}, diff: {diff[idx].item():.4f}")
+            
+            previous_output = rule_output

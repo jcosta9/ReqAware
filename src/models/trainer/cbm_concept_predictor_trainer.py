@@ -49,16 +49,17 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         Parameters:
             outputs (torch.Tensor): Model outputs.
-            labels (torch.Tensor): Ground truth labels.
+            concepts (torch.Tensor): Ground truth concept labels.
 
         Returns:
-            float: Accuracy of the predictions.
+            tuple: (predicted_concepts, correct_predictions, total_predictions, accuracy)
         """
         probs = torch.sigmoid(outputs)
         predicted = (probs > 0.5).long()  # TODO: Threshold can be a config parameter
         correct = (predicted == concepts).sum().item()
         total = concepts.size(0) * concepts.size(1)
-        return predicted, correct, total
+        accuracy = correct / total if total > 0 else 0.0
+        return predicted, correct, total, accuracy
 
     def _train_epoch(self, epoch):
         """
@@ -154,7 +155,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 #     print(f"[MODEL] {progress.desc}")
                 progress.update(1)
 
-                _, correct, total = self.compute_accuracy(outputs, concepts)
+                _, correct, total, _ = self.compute_accuracy(outputs, concepts)
                 running_correct += correct
                 running_total += total
 
@@ -240,28 +241,35 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         y_true = []
         y_pred = []
 
-        loss = 0.0
+        running_loss = 0.0
         running_correct = 0
         running_total = 0
 
         with tqdm.trange(STEPS, desc=f"{mode.title()} Evaluation") as progress:
-            for batch_idx, (idx, inputs, (concepts, _)) in enumerate(self.train_loader):
+            for batch_idx, (idx, inputs, (concepts, _)) in enumerate(dataloader):
                 inputs, concepts = inputs.to(self.device), concepts.to(self.device)
 
                 # Evaluating label_predictor on predicted concepts
                 outputs = self.model(inputs)
 
                 if mode == "val":
-                    batch_loss = self.criterion(outputs, concepts).item()
-                    loss += batch_loss * inputs.size(0)
+                    loss = self.criterion(outputs, concepts)
+                    running_loss += loss.item()
 
                 # Measuring Accuracy
-                predicted, correct, total = self.compute_accuracy(outputs, concepts)
+                predicted, correct, total, _ = self.compute_accuracy(outputs, concepts)
                 running_correct += correct
                 running_total += total
 
                 y_true.extend(concepts.cpu().numpy())
                 y_pred.extend(predicted.cpu().numpy())
+
+                if mode == "val":
+                    progress.desc = (
+                        f"{mode.title()} [{batch_idx}/{STEPS}]"
+                        + f" | Loss {loss:.10f} "
+                    )
+                    progress.update(1)
 
         accuracy = running_correct / running_total
 
@@ -276,7 +284,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             )
             return None, accuracy
 
-        avg_loss = loss / len(dataloader.dataset)
+        avg_loss = running_loss / STEPS
 
         self.writer.add_scalar(
             f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch
@@ -286,3 +294,54 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         )
 
         return avg_loss, accuracy
+
+    @torch.no_grad()
+    def get_predictions(self, dataloader):
+        """
+        Perform a complete forward pass on the dataloader and return predictions and ground truth.
+        
+        Parameters:
+            dataloader (DataLoader): DataLoader containing the dataset to evaluate.
+            
+        Returns:
+            tuple: (concept_predictions, concept_ground_truth, concept_probabilities)
+                - concept_predictions (numpy.ndarray): Binary predictions for concepts (0 or 1)
+                - concept_ground_truth (numpy.ndarray): Ground truth concept labels
+                - concept_probabilities (numpy.ndarray): Probability scores for each concept
+        """
+        self.model.eval()
+        
+        # Lists to store predictions and ground truth
+        all_logits = []
+        all_predictions = []
+        all_ground_truth = []
+        all_probabilities = []
+        
+        # Process all batches
+        with tqdm.tqdm(dataloader, desc="Getting predictions") as progress:
+            for idx, inputs, (concepts, _) in progress:
+                inputs = inputs.to(self.device)
+                concepts = concepts.to(self.device)
+                
+                # Forward pass
+                outputs = self.model(inputs)
+                
+                # Convert logits to probabilities
+                probabilities = torch.sigmoid(outputs)
+                
+                # Get binary predictions using threshold
+                predictions = (probabilities > 0.5).long()
+                
+                # Store batch results
+                all_logits.append(outputs.cpu().numpy())
+                all_predictions.append(predictions.cpu().numpy())
+                all_ground_truth.append(concepts.cpu().numpy())
+                all_probabilities.append(probabilities.cpu().numpy())
+        
+        # Concatenate results from all batches
+        all_logits = np.vstack(all_logits)
+        concept_predictions = np.vstack(all_predictions)
+        concept_ground_truth = np.vstack(all_ground_truth)
+        concept_probabilities = np.vstack(all_probabilities)
+        
+        return all_logits, concept_predictions, concept_ground_truth, concept_probabilities
