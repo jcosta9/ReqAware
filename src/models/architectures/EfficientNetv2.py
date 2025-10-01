@@ -23,20 +23,21 @@ from torchvision import models
 
 
 class EfficientNetv2(nn.Module):
-    def __init__(self, n_labels, device):
+    def __init__(self, n_labels, freeze_backbone=False):
         super(EfficientNetv2, self).__init__()
 
         self.predictor = models.efficientnet_v2_s(
             weights=models.EfficientNet_V2_S_Weights.DEFAULT
         )
 
-        for params in self.predictor.parameters():
-            params.requires_grad = True
+        #TODO: config param for requires_grad
+        if freeze_backbone:
+            for params in self.predictor.parameters():
+                params.requires_grad = False
 
         self.predictor.classifier[1] = nn.Linear(
             in_features=1280, out_features=n_labels
         )
-        self.predictor.to(device)
 
     def forward(self, x):
         return self.predictor(x)

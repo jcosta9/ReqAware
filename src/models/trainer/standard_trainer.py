@@ -50,7 +50,7 @@ class StandardTrainer(BaseTrainer):
         STEPS = len(self.train_loader)
 
         with tqdm.trange(STEPS) as progress:
-            for batch_idx, (inputs, targets) in enumerate(self.train_loader):
+            for batch_idx, (idx, inputs, targets) in enumerate(self.train_loader):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
 
                 self.optimizer.zero_grad()
@@ -115,7 +115,7 @@ class StandardTrainer(BaseTrainer):
         running_total = 0
 
         with tqdm.trange(STEPS, desc=f"{mode.title()} Evaluation") as progress:
-            for batch_idx, (inputs, labels) in enumerate(dataloader):
+            for batch_idx, (idx, inputs, labels) in enumerate(dataloader):
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
 
                 # Evaluating label_predictor on predicted concepts

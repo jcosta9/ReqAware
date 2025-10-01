@@ -59,7 +59,7 @@ class GTSRBFactory(DatasetFactory):
         logging.info(f"[DATA ACCESS] Loading GTSRB training dataset")
         full_train_dataset = ConceptAwareDataset(
             root_dir=self.config.data_path / "training",
-            concepts_file=self.config.concepts_file,
+            concepts_file=self.config.concepts_file if hasattr(self.config, "concepts_file") else None,
             transform=train_transform,
         )
 
@@ -76,7 +76,7 @@ class GTSRBFactory(DatasetFactory):
         logging.info(f"[DATA ACCESS] Loading GTSRB test dataset")
         self.test_dataset = ConceptAwareDataset(
             root_dir=self.config.data_path / "test",
-            concepts_file=self.config.concepts_file,
+            concepts_file=self.config.concepts_file if hasattr(self.config, "concepts_file") else None,
             transform=test_transform,
         )
 

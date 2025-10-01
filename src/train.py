@@ -1,7 +1,7 @@
 from pathlib import Path
 from omegaconf import OmegaConf
 
-from models.architectures import ResNetCifar10
+from models.architectures import EfficientNetv2
 from models.trainer import StandardTrainer
 from config import StandardTrainerConfig
 
@@ -20,7 +20,7 @@ def load_config(config_path):
 
 
 def main():
-    config = load_config(Path("files/configs/cifar10_config.yaml"))
+    config = load_config(Path("files/configs/GTSRB_Baseline_config.yaml"))
 
     # Dataset
     dataset_factory = config.dataset.factory(
@@ -35,7 +35,7 @@ def main():
     test_loader = dataset_factory.test_dataloader
 
     # Model
-    model = ResNetCifar10(config)
+    model = EfficientNetv2(config.dataset.n_labels).to(config.device)
 
     # Train
     trained_model, test_accuracy = StandardTrainer(
