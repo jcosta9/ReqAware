@@ -21,6 +21,7 @@ class StandardTrainerConfig:
     device: str = "cuda"
     device_no: int = 0
     log_dir: Path = "runs/default"
+    output_dir: Path = "experiments"
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
 
@@ -31,4 +32,4 @@ class StandardTrainerConfig:
             else "cpu"
         )
         self.dataset.resolve()
-        self.training.resolve()
+        self.training.resolve(self.output_dir)
