@@ -4,28 +4,28 @@ device_no: 1
 print_freq: 30
 output_dir: experiments
 dataset:
-    name: cifar10
-    n_labels: 10
-    batch_size: 128
+    name: gtsrb
+    n_labels: 43
+    batch_size: 64
     num_workers: 4
     shuffle_dataset: True
     pin_memory: True
-    data_path: /vol/home-vol2/se/costajoa/Dokumente/data/raw
+    data_path: ../data/raw/GTSRB/converted
     val_split: 0.2
 training:
     log_dir: logs
     lr: 0.001
-    epochs: 10
+    epochs: 1
     lr_step: 10
     lr_gamma: 0.5
-    early_stopping_patience: 15
+    early_stopping_patience: 4
     momentum: 0.9
     weight_decay: 5e-4
     freeze: False
     pretrained_weights: null
     checkpoint_dir: models
     criterion: cross_entropy
-    optimizer: sgd
+    optimizer: adamw
     scheduler: cosine_annealing
     scheduler_params: 
         T_max: 10

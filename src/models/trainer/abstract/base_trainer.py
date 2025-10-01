@@ -39,7 +39,6 @@ class BaseTrainer(ABC):
     def __init__(
         self,
         config,
-        experiment_id,
         model,
         train_loader,
         val_loader,
@@ -55,7 +54,7 @@ class BaseTrainer(ABC):
             val_loader (DataLoader): DataLoader for the validation dataset.
             config (Config): Configuration object containing training parameters and paths.
         """
-        self.experiment_id = experiment_id
+        self.experiment_id = config.experiment_id
         self.tag = ""
         self.config = config
         self.device = device
@@ -88,7 +87,7 @@ class BaseTrainer(ABC):
             print(f"Loading pretrained weights from: {config.pretrained_weights}")
             self.model.load_state_dict(torch.load(config.pretrained_weightsm, weights_only=True))
 
-        return self
+        # return self
 
     def validate(self, epoch):
         """

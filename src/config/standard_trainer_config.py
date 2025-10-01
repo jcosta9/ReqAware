@@ -1,3 +1,4 @@
+from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, Any
 
@@ -16,11 +17,11 @@ from models.registries import (
 
 @dataclass
 class StandardTrainerConfig:
+    experiment_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     seed: int = 42
     print_freq: int = 30
     device: str = "cuda"
     device_no: int = 0
-    log_dir: Path = "runs/default"
     output_dir: Path = "experiments"
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
@@ -32,4 +33,4 @@ class StandardTrainerConfig:
             else "cpu"
         )
         self.dataset.resolve()
-        self.training.resolve(self.output_dir)
+        self.training.resolve(output_dir=self.output_dir, experiment_id=self.experiment_id)

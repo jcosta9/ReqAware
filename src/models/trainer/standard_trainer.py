@@ -24,12 +24,11 @@ class StandardTrainer(BaseTrainer):
         train_loader,
         val_loader,
         test_loader,
-        log_dir=None,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
 
         super().__init__(
-            config, model, train_loader, val_loader, test_loader, log_dir, device
+            config, model, train_loader, val_loader, test_loader, device
         )
 
     def _train_epoch(self, epoch):
@@ -51,7 +50,7 @@ class StandardTrainer(BaseTrainer):
         STEPS = len(self.train_loader)
 
         with tqdm.trange(STEPS) as progress:
-            for batch_idx, (inputs, targets) in enumerate(self.train_loader):
+            for batch_idx, (idx, inputs, targets) in enumerate(self.train_loader):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
 
                 self.optimizer.zero_grad()
@@ -94,7 +93,7 @@ class StandardTrainer(BaseTrainer):
         return accuracy
 
     @torch.no_grad()
-    def test(self, dataloader, mode="val"):
+    def test(self, dataloader, epoch=0, mode="val"):
         """
         Evaluate the model on the provided dataloader.
 
@@ -106,32 +105,41 @@ class StandardTrainer(BaseTrainer):
             tuple: Average loss and accuracy for the dataset.
         """
         self.model.eval()
+        STEPS = len(dataloader)
 
         y_true = []
         y_pred = []
 
-        loss = 0.0
-        correct = 0
-        total = 0
+        running_loss = 0.0
+        running_correct = 0
+        running_total = 0
 
-        for inputs, labels in tqdm.tqdm(dataloader, desc=f"{mode.title()} Evaluation"):
-            inputs, labels = inputs.to(self.device), labels.to(self.device)
+        with tqdm.trange(STEPS, desc=f"{mode.title()} Evaluation") as progress:
+            for batch_idx, (idx, inputs, labels) in enumerate(dataloader):
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
 
-            # Evaluating label_predictor on predicted concepts
-            outputs = self.model(inputs)
+                # Evaluating label_predictor on predicted concepts
+                outputs = self.model(inputs)
 
-            if mode == "val":
-                batch_loss = self.criterion(outputs, labels).item()
-                loss += batch_loss * inputs.size(0)
+                if mode == "val":
+                    loss = self.criterion(outputs, labels)
+                    running_loss += loss.item()
 
-            # Measuring Accuracy
-            _, pred_labels = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (pred_labels == labels).sum().item()
-            y_true.extend(labels.cpu().numpy())
-            y_pred.extend(pred_labels.cpu().numpy())
+                # Measuring Accuracy
+                _, pred_labels = torch.max(outputs, 1)
+                running_total += labels.size(0)
+                running_correct += (pred_labels == labels).sum().item()
+                y_true.extend(labels.cpu().numpy())
+                y_pred.extend(pred_labels.cpu().numpy())
 
-        accuracy = correct / total
+                if mode == "val":
+                    progress.desc = (
+                        f"{mode.title()} [{batch_idx}/{STEPS}]"
+                        + f" | Loss {loss:.10f} "
+                    )
+                    progress.update(1)
+
+        accuracy = running_correct / running_total
 
         y_true = np.array(y_true)
         y_pred = np.array(y_pred)
@@ -139,9 +147,18 @@ class StandardTrainer(BaseTrainer):
         if mode == "test":
             report = f"Labels: \n {classification_report(y_true, y_pred)}"
             logging.info(report)
-            print(report)
+            self.writer.add_text(
+                "Classification Report/Test", report, 0
+            )
             return None, accuracy
 
-        avg_loss = loss / len(dataloader.dataset)
+        avg_loss = running_loss / STEPS
+
+        self.writer.add_scalar(
+            f"Loss/{mode.upper()}", avg_loss, epoch
+        )
+        self.writer.add_scalar(
+            f"Accuracy/{mode.upper()}", accuracy, epoch
+        )
 
         return avg_loss, accuracy

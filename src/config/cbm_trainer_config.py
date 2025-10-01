@@ -43,7 +43,7 @@ class CBMTrainerConfig:
             
 
         self.dataset.resolve()
-        self.concept_predictor.resolve(output_dir=self.output_dir)
-        self.label_predictor.resolve(output_dir=self.output_dir)
+        self.concept_predictor.resolve(output_dir=self.output_dir, experiment_id=self.experiment_id)
+        self.label_predictor.resolve(output_dir=self.output_dir, experiment_id=self.experiment_id)
 
         self.concept_predictor.fuzzy_loss.concept_map = self.dataset.get_concept_map()
