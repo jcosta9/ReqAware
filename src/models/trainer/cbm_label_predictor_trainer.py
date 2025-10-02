@@ -31,7 +31,6 @@ class CBMLabelPredictorTrainer(BaseTrainer):
 
         super().__init__(
             config,
-            experiment_id,
             model,
             train_loader,
             val_loader,
@@ -181,7 +180,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
         running_total = 0
 
         with tqdm.trange(STEPS, desc=f"{mode.title()} Evaluation") as progress:
-            for batch_idx, (idx, inputs, (_, labels)) in enumerate(self.train_loader):
+            for batch_idx, (idx, inputs, (_, labels)) in enumerate(dataloader):
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
 
                 # Evaluating label_predictor on predicted concepts
@@ -205,6 +204,13 @@ class CBMLabelPredictorTrainer(BaseTrainer):
                 _, pred_labels = torch.max(pred_labels, 1)
                 y_pred.extend(pred_labels.cpu().numpy())
 
+                if mode == "val":
+                    progress.desc = (
+                        f"{mode.title()} [{batch_idx}/{STEPS}]"
+                        + f" | Loss {loss:.10f} "
+                    )
+                progress.update(1)
+
         accuracy = running_correct / running_total
 
         y_true = np.array(y_true)
@@ -212,7 +218,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
 
         if mode == "test":
             report = f"Labels: \n {classification_report(y_true, y_pred)}"
-            logging.info(report)
+            print(report)
             self.writer.add_text("Classification Report/Label_Predictor/Test", report, 0)
             return None, accuracy
 

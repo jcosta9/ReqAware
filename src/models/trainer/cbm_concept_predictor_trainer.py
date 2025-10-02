@@ -30,12 +30,11 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         super().__init__(
             config,
-            experiment_id,
             model,
             train_loader,
             val_loader,
             test_loader,
-            device,
+            device
         )
 
         self.tag += "concept_predictor"
@@ -55,7 +54,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             tuple: (predicted_concepts, correct_predictions, total_predictions, accuracy)
         """
         probs = torch.sigmoid(outputs)
-        predicted = (probs > 0.5).long()  # TODO: Threshold can be a config parameter
+        predicted = probs > 0.5  # TODO: Threshold can be a config parameter
         correct = (predicted == concepts).sum().item()
         total = concepts.size(0) * concepts.size(1)
         accuracy = correct / total if total > 0 else 0.0
@@ -244,6 +243,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         running_loss = 0.0
         running_correct = 0
         running_total = 0
+        print(len(dataloader.dataset))
 
         with tqdm.trange(STEPS, desc=f"{mode.title()} Evaluation") as progress:
             for batch_idx, (idx, inputs, (concepts, _)) in enumerate(dataloader):
@@ -263,13 +263,13 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
                 y_true.extend(concepts.cpu().numpy())
                 y_pred.extend(predicted.cpu().numpy())
-
+                
                 if mode == "val":
                     progress.desc = (
                         f"{mode.title()} [{batch_idx}/{STEPS}]"
                         + f" | Loss {loss:.10f} "
                     )
-                    progress.update(1)
+                progress.update(1)
 
         accuracy = running_correct / running_total
 
@@ -278,7 +278,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         if mode == "test":
             report = f"{classification_report(y_true, y_pred)}"
-            logging.info(report)
+            print(report)
             self.writer.add_text(
                 "Classification Report/Concept_Predictor/Test", report, 0
             )
