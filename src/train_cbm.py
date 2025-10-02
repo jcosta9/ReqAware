@@ -6,7 +6,7 @@ from config import CBMTrainerConfig
 from models.trainer.cbm_trainer import CBMTrainer
 
 
-def load_config(config_path) -> CBMTrainerConfig:
+def cbm_load_config(config_path) -> CBMTrainerConfig:
     """
     Load the configuration from a YAML file.
     """
@@ -20,7 +20,7 @@ def load_config(config_path) -> CBMTrainerConfig:
 
 
 def main():
-    config = load_config(Path("files/configs/GTSRB_CBM_config_optimalV3.yaml"))
+    config = cbm_load_config(Path("files/configs/GTSRB_CBM_config_best_trial.yaml"))
 
     # Dataset
     dataset_factory = config.dataset.factory(

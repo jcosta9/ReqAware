@@ -6,7 +6,7 @@ from models.trainer import StandardTrainer
 from config import StandardTrainerConfig
 
 
-def load_config(config_path):
+def cnn_load_config(config_path):
     """
     Load the configuration from a YAML file.
     """
@@ -20,7 +20,7 @@ def load_config(config_path):
 
 
 def main():
-    config = load_config(Path("files/configs/GTSRB_Baseline_config.yaml"))
+    config = cnn_load_config(Path("files/configs/GTSRB_Baseline_config.yaml"))
 
     # Dataset
     dataset_factory = config.dataset.factory(
