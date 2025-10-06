@@ -85,7 +85,11 @@ class BaseTrainer(ABC):
 
         if config.pretrained_weights is not None:
             print(f"Loading pretrained weights from: {config.pretrained_weights}")
-            self.model.load_state_dict(torch.load(config.pretrained_weightsm, weights_only=True))
+            try:
+                self.model.load_state_dict(torch.load(config.pretrained_weights, weights_only=True))
+            except Exception as e:
+                print(f"Error loading pretrained weights: {e}")
+                raise e
 
         # return self
 
