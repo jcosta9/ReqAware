@@ -42,25 +42,10 @@ class CBMSequentialEfficientNetFCN(nn.Module):
             dropout=self.config.label_predictor.dropout,
         )
 
-        # if self.config.freeze_concept_predictor:
-        #     # TODO: check if model exists
-        #     logging.info(
-        #         f"Loading concept predictor model: {self.config.concept_predictor_file}"
-        #     )
-        #     filename_concept = os.path.join(
-        #         self.config.models_path, self.config.concept_predictor_file
-        #     )
-        #     self.concept_predictor.load_state_dict(torch.load(filename_concept))
-
-        # if self.config.freeze_label_predictor:
-        #     # TODO: check if model exists
-        #     logging.info(
-        #         f"Loading label predictor model: {self.config.label_predictor_file}"
-        #     )
-        #     filename_label = os.path.join(
-        #         self.config.models_path, self.config.label_predictor_file
-        #     )
-        #     self.label_predictor.load_state_dict(torch.load(filename_label))
+    def to(self, device):
+        self.concept_predictor.to(device)
+        self.label_predictor.to(device)
+        return self
 
     def forward(self, x):
         concepts = self.concept_predictor(x)
