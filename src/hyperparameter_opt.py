@@ -117,7 +117,7 @@ def objective_baseline_cbm(trial, base_config, args):
     # Return the metric we want to optimize
     return validation_acc
     
-def objective(trial, base_config, args):
+def fuzzy_objective(trial, base_config, args):
     """Objective function to be optimized by Optuna.
     
     Args:
@@ -150,7 +150,7 @@ def objective(trial, base_config, args):
         p_key = f"p_{rule_name}"
         
         # Sample lambda value for this rule
-        rules[rule_name].fuzzy_lambda = trial.suggest_float(lambda_key, 0.0001, 0.7)
+        rules[rule_name].fuzzy_lambda = trial.suggest_float(lambda_key, 0.0001, 0.8)
         
         # Sample p value for operators if they exist
         if hasattr(rules[rule_name], 'operators'):
@@ -196,10 +196,14 @@ def objective(trial, base_config, args):
                 # Re-raise other runtime errors
                 raise
     # Get predictions and calculate metrics
-    concept_logits, _, concept_ground_truth, _ = (
+    concept_logits, concept_predictions, concept_ground_truth, _ = (
         trainer.concept_predictor_trainer.get_predictions(dataloader=val_loader)
     )
-    _, validation_acc = trainer.concept_predictor_trainer.test(dataloader=val_loader)
+    concept_predictions_tensor = torch.tensor(concept_predictions, device=device)
+    concept_ground_truth_tensor = torch.tensor(concept_ground_truth, device=device)
+    all_correct_predictions = torch.sum(torch.all(concept_predictions_tensor == concept_ground_truth_tensor, dim=1)).item()
+    total_samples = len(concept_ground_truth)
+    per_prediction_accuracy = all_correct_predictions / total_samples
 
     # Calculate fuzzy loss using the original fuzzy loss function
     fuzzy_loss_fn = CustomFuzzyLoss(
@@ -219,12 +223,12 @@ def objective(trial, base_config, args):
     torch.cuda.empty_cache()
     # Print trial results
     print(f"Trial {trial.number}:")
-    print(f"  Validation Accuracy: {validation_acc:.4f}")
+    print(f"  Validation Accuracy: {per_prediction_accuracy:.4f}")
     print(f"  Standard Loss: {standard_loss:.4f}")  
     print(f"  Base Fuzzy using default values: {fuzzy_loss_value:.4f}")
     
     # Return metrics as a dictionary
-    return validation_acc
+    return per_prediction_accuracy
 
 def create_objective_function(model_type):
     # Return the appropriate objective function based on model type
@@ -233,7 +237,7 @@ def create_objective_function(model_type):
     elif model_type == "baseline_cnn":
         return objective_baseline_cnn
     else:
-        return objective
+        return fuzzy_objective
     
 def run_optimization(gpu_id, study, study_name, base_config, n_trials, args):
 
@@ -245,7 +249,7 @@ def run_optimization(gpu_id, study, study_name, base_config, n_trials, args):
     
     # Run optimization
     study.optimize(
-        lambda trial: objective(trial, base_config, args), 
+        lambda trial: fuzzy_objective(trial, base_config, args), 
         n_trials=n_trials,
     )
     
@@ -306,6 +310,10 @@ def main():
                         default="cbm_fuzzy", help="Model type to optimize")
     args = parser.parse_args()
     
+    # Initialize CUDA before forking processes
+    if torch.cuda.is_available():
+        torch.cuda.init()
+    
     # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
     
@@ -315,7 +323,7 @@ def main():
     
     # Load appropriate base configuration
     if args.model_type == "cbm_fuzzy":
-        base_config = cbm_load_config(Path("files/configs/GTSRB_CBM_config_optimalV3.yaml"))
+        base_config = cbm_load_config(Path("files/configs/GTSRB_CBM_config_best_trial_loading.yaml"))
     elif args.model_type == "baseline_cbm":
         base_config = cbm_load_config(Path("files/configs/GTSRB_CBM_config.yaml"))
     elif args.model_type == "baseline_cnn":
