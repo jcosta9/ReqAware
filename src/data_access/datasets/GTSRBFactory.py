@@ -28,6 +28,7 @@ GTSRB_basic_transform = transforms.Compose(
     [
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ]
 )
 
@@ -46,7 +47,7 @@ class GTSRBFactory(DatasetFactory):
     def load_datasets(
         self,
         train_transform=GTSRB_transform,
-        test_transform=GTSRB_transform,
+        test_transform=GTSRB_basic_transform,
     ):
         """Load GTSRB dataset and splits the training set into training and validation subsets.
 
@@ -67,11 +68,20 @@ class GTSRBFactory(DatasetFactory):
         val_size = int(len(full_train_dataset) * self.config.val_split)
         train_size = len(full_train_dataset) - val_size
 
-        self.train_dataset, self.val_dataset = random_split(
-            full_train_dataset,
+        train_indices, val_indices = torch.utils.data.random_split(
+            range(len(full_train_dataset)),
             [train_size, val_size],
             generator=torch.Generator().manual_seed(self.seed),
         )
+
+        self.train_dataset = torch.utils.data.Subset(full_train_dataset, train_indices.indices)
+
+        self.val_dataset = ConceptAwareDataset(
+            root_dir=self.config.data_path / "training",
+            concepts_file=self.config.concepts_file if hasattr(self.config, "concepts_file") else None,
+            transform=test_transform,
+        )
+        self.val_dataset = torch.utils.data.Subset(self.val_dataset, val_indices.indices)
 
         logging.info(f"[DATA ACCESS] Loading GTSRB test dataset")
         self.test_dataset = ConceptAwareDataset(
