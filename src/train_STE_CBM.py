@@ -72,13 +72,13 @@ class STECBMConfig:
             "log_dir": "logs",
             "checkpoint_dir": "models",
             "lr": 0.1,
-            "concept_lambda": 1.0,  # Hyperparameter for concept regularization
+            "concept_lambda": 0.1,#1.0,  # Hyperparameter for concept regularization
             "epochs": 50,
             "lr_step": 10,
             "lr_gamma": 0.5,
             "early_stopping_patience": 10,
             "momentum": 0.9,
-            "weight_decay": 5e-4,
+            "weight_decay": 10e-3,
             "freeze": False,
             "pretrained_weights": None,
             "criterion": CRITERIONS_REGISTRY["cross_entropy"],
@@ -95,6 +95,8 @@ class STECBMConfig:
     )
 
 if __name__ == "__main__":
+    "YOU CAN LOAD THE MODEL FROM THE LAST RUN AND KEEP TRAINING"
+    "LAST RUN ID IN: experiments/20251008_130008"
     ste_config = STECBMConfig()
 
     overrides = [
@@ -108,7 +110,7 @@ if __name__ == "__main__":
 
 
     dataset_config = load_config(
-        Path("../files/configs/GTSRB_CBM_config_best_trial.yaml"),
+        Path("../files/configs/GTSRB_CBM_config_STE.yaml"),
         overrides=overrides
         )
     

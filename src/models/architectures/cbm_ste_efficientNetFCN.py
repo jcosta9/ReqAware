@@ -67,10 +67,10 @@ class CBMSTEEfficientNetFCN(nn.Module):
         # 
         # Fwd: hard_concepts (Correct for bottleneck)
         # Bwd: gradient of (soft_concepts) (Correct for backprop)
-        ste_concepts = hard_concepts.detach() + (soft_concepts - hard_concepts)
+        ste_concepts = hard_concepts.detach() + 0.001 * (soft_concepts - hard_concepts)
         
         # 5. Pass the STE concepts to the label predictor
         pred_labels = self.label_predictor(ste_concepts)
         
         # Return the actual hard concepts for logging/metrics
-        return hard_concepts, pred_labels, concept_logits 
+        return hard_concepts, pred_labels, concept_logits
