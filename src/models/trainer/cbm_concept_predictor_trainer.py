@@ -4,6 +4,7 @@ import logging
 import numpy as np
 from sklearn.metrics import classification_report
 
+import optuna
 import torch
 
 from models.loss import CustomFuzzyLoss
@@ -26,6 +27,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         val_loader,
         test_loader,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        trial=None
     ):
 
         super().__init__(
@@ -41,14 +43,11 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         self.criterion = CustomFuzzyLoss(
             config=self.config.fuzzy_loss, current_loss_fn=self.criterion
         )
+        self.trial = trial
 
     def compute_accuracy(self, outputs, concepts):
         """
-        Compute the accuracy of the model's predictions.
-
-        Parameters:
-            outputs (torch.Tensor): Model outputs.
-            concepts (torch.Tensor): Ground truth concept labels.
+        Compute the accuracy of the model's per concept accuracy.
 
         Returns:
             tuple: (predicted_concepts, correct_predictions, total_predictions, accuracy)
@@ -59,6 +58,25 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         total = concepts.size(0) * concepts.size(1)
         accuracy = correct / total if total > 0 else 0.0
         return predicted, correct, total, accuracy
+    
+    def compute_accuracy_pre_prediction(self, outputs, concepts):
+        """
+        Compute the accuracy per prediction.
+
+        Parameters:
+            outputs (torch.Tensor): Model outputs.
+            concepts (torch.Tensor): Ground truth concept labels.
+
+        Returns:
+            correct, total
+        """
+        probs = torch.sigmoid(outputs)
+        predicted = probs > 0.5 
+
+        correct = torch.sum(torch.all(predicted == concepts, dim=1))
+        total = outputs.size(0)
+    
+        return correct, total
 
     def _train_epoch(self, epoch):
         """
@@ -76,6 +94,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         """
         running_loss = 0.0
         running_correct, running_total = 0, 0
+        per_prediction_correct, per_prediction_total = 0, 0
         STEPS = len(self.train_loader)
         global_step_base = epoch * STEPS
 
@@ -157,11 +176,16 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 _, correct, total, _ = self.compute_accuracy(outputs, concepts)
                 running_correct += correct
                 running_total += total
+                pred_correct, pred_total = self.compute_accuracy_pre_prediction(outputs, concepts)
+                per_prediction_correct += pred_correct
+                per_prediction_total += pred_total
 
             avg_loss = running_loss / STEPS
             accuracy = running_correct / running_total
+            per_prediction_acc = per_prediction_correct / per_prediction_total
             self.writer.add_scalar("Loss/Train/Concept_Predictor", avg_loss, epoch)
             self.writer.add_scalar("Accuracy/Train/Concept_Predictor", accuracy, epoch)
+            self.writer.add_scalar("Per_Prediction_Accuracy/Train/Concept_Predictor", per_prediction_acc, epoch)
 
             if self.config.fuzzy_loss.use_fuzzy_loss:
                 avg_loss_standard = running_loss_standard / STEPS
@@ -218,7 +242,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         print(
             f"Train | Epoch: [{epoch + 1}/{self.config.epochs}] \
-                      Loss: {avg_loss:.4f}, Accuracy: {accuracy:.4f}"
+                      Loss: {avg_loss:.4f}, Accuracy per Concept: {accuracy:.6f}, Accuracy per Prediction: {per_prediction_acc:.6f}"
         )
         return accuracy
 
@@ -243,7 +267,6 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         running_loss = 0.0
         running_correct = 0
         running_total = 0
-        print(len(dataloader.dataset))
 
         with tqdm.trange(STEPS, desc=f"{mode.title()} Evaluation") as progress:
             for batch_idx, (idx, inputs, (concepts, _)) in enumerate(dataloader):
@@ -278,13 +301,12 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         if mode == "test":
             report = f"{classification_report(y_true, y_pred)}"
-            print(report)
             self.writer.add_text(
                 "Classification Report/Concept_Predictor/Test", report, 0
             )
             return None, accuracy
 
-        avg_loss = running_loss / STEPS
+        avg_loss = running_loss / running_total
 
         self.writer.add_scalar(
             f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch

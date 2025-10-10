@@ -44,6 +44,7 @@ class BaseTrainer(ABC):
         val_loader,
         test_loader,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        trial=None
     ):
         """
         Initialize the Trainer with model, data loaders, and training configuration.
@@ -69,9 +70,10 @@ class BaseTrainer(ABC):
             self.model.parameters(),
             lr=self.config.lr,
         )
-        self.scheduler = self.config.scheduler(  # TODO: Flexible scheduler
-            self.optimizer, **self.config.scheduler_params
-        )
+        if self.config.scheduler is not None:
+            self.scheduler = self.config.scheduler(  # TODO: Flexible scheduler
+                self.optimizer, **self.config.scheduler_params
+            )
         self.writer = SummaryWriter(
             log_dir=self.log_dir
         )  # TODO: separate class for logging
@@ -169,7 +171,8 @@ class BaseTrainer(ABC):
 
             val_loss, val_accuracy = self.validate(epoch=epoch)
             self.save_checkpoint(epoch, val_accuracy)
-            self.scheduler.step(val_loss)
+            if self.config.scheduler is not None:
+                self.scheduler.step(val_loss)
 
             if self.early_stopping.early_stop:
                 break
