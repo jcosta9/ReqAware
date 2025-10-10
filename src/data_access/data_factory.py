@@ -38,7 +38,7 @@ class DatasetFactory(ABC):
         """Loads datasets for training/testing models."""
         pass
 
-    def get_datasets(self, load_if_none=True):
+    def get_datasets(self, load_if_none=True, **kwargs):
         """Calls the set_datasets method to load datasets."""
         logging.info(f"[DATA ACCESS] Loading datasets")
 
@@ -53,7 +53,7 @@ class DatasetFactory(ABC):
                 )
                 return (None, None, None)
 
-            self.load_datasets()
+            self.load_datasets(**kwargs)
 
         return self.train_dataset, self.val_dataset, self.test_dataset
 
@@ -73,7 +73,7 @@ class DatasetFactory(ABC):
             ),  # Ensures reproducibility
         )
 
-    def set_dataloaders(self, load_if_none=True):
+    def set_dataloaders(self, load_if_none=True, **kwargs):
         """Wrap datasets into dataloaders after get_datasets() is called."""
 
         logging.info(f"[DATA ACCESS] Setting dataloaders")
@@ -88,7 +88,7 @@ class DatasetFactory(ABC):
                 )
                 return self
 
-            self.load_datasets()
+            self.load_datasets(**kwargs)
 
         logging.info(f"[DATA ACCESS] Wrapping datasets into dataloaders")
         if self.train_dataset:
@@ -104,7 +104,7 @@ class DatasetFactory(ABC):
 
         return self
 
-    def get_dataloaders(self, load_if_none=True):
+    def get_dataloaders(self, load_if_none=True, **kwargs):
         """Returns the dataloaders for training, validation, and testing."""
         logging.info(f"[DATA ACCESS] Getting dataloaders")
         if not self.dataloaders_set:
@@ -118,6 +118,6 @@ class DatasetFactory(ABC):
                 )
                 return (None, None, None)
 
-            self.set_dataloaders(load_if_none)
+            self.set_dataloaders(load_if_none, **kwargs)
 
         return self.train_dataloader, self.val_dataloader, self.test_dataloader
