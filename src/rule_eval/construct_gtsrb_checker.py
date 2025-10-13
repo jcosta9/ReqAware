@@ -62,13 +62,13 @@ def construct_full_graph():
     )
 
     # Level 2 Nodes under "All symbols"
-    concept_graph_semantic_relation.add_concept(
-        name="Number symbols",
-        concept_indices=list(range(10, 18)),
-        constraint=[
-            Constraint("Numbers constraint", lambda x: np.sum(x) <= 3)
-        ]
-    )
+    # concept_graph_semantic_relation.add_concept(
+    #     name="Number symbols",
+    #     concept_indices=list(range(10, 18)),
+    #     constraint=[
+    #         Constraint("Numbers constraint", lambda x: np.sum(x) <= 3)
+    #     ]
+    # )
     concept_graph_semantic_relation.add_concept(
         name="General symbols",
         concept_indices=list(range(18, 34)),
@@ -147,10 +147,10 @@ def construct_full_graph():
     )
 
     # Connect "All symbols" to its children
-    concept_graph_semantic_relation.add_relation(
-        from_node="All symbols",
-        to_node="Number symbols",
-    )
+    # concept_graph_semantic_relation.add_relation(
+    #     from_node="All symbols",
+    #     to_node="Number symbols",
+    # )
     concept_graph_semantic_relation.add_relation(
         from_node="All symbols",
         to_node="General symbols",
@@ -195,7 +195,7 @@ def construct_full_graph():
     # adding relation between arrows and overall symbols
     list(range(37,43))
     concept_graph_semantic_relation.add_relation(
-        from_node="Number symbols",
+        from_node="Arrow symbols",
         to_node="All symbols",
         concept_indices=list(range(10, 43)),
         constraint=[
@@ -226,14 +226,14 @@ def construct_full_graph():
     )
 
     # adding the constraint that if one number is found another number needs to be present
-    concept_graph_semantic_relation.add_relation(
-        from_node="Number symbols",
-        to_node="Number symbols",
-        concept_indices=list(range(10, 18)),
-        constraint=[
-            Constraint("One number", lambda x: False if np.sum(x[10:18]) == 1 else True)
-        ]
-    )
+    # concept_graph_semantic_relation.add_relation(
+    #     from_node="Number symbols",
+    #     to_node="Number symbols",
+    #     concept_indices=list(range(10, 18)),
+    #     constraint=[
+    #         Constraint("One number", lambda x: False if np.sum(x[10:18]) == 1 else True)
+    #     ]
+    # )
     
     # adding relation between warning symbols, shpe and color
     warning_main_color = warning_indices + [0]
