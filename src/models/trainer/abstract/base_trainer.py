@@ -44,7 +44,7 @@ class BaseTrainer(ABC):
         val_loader,
         test_loader,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-        trial=None
+        trial=None,
     ):
         """
         Initialize the Trainer with model, data loaders, and training configuration.
@@ -88,7 +88,9 @@ class BaseTrainer(ABC):
         if config.pretrained_weights is not None:
             print(f"Loading pretrained weights from: {config.pretrained_weights}")
             try:
-                self.model.load_state_dict(torch.load(config.pretrained_weights, weights_only=True))
+                self.model.load_state_dict(
+                    torch.load(config.pretrained_weights, weights_only=True)
+                )
             except Exception as e:
                 print(f"Error loading pretrained weights: {e}")
                 raise e
@@ -119,22 +121,28 @@ class BaseTrainer(ABC):
         """
         self.early_stopping(val_accuracy, self.model)
 
-        print(f"Current Accuracy: {val_accuracy}, Best Accuracy: {self.best_val_accuracy}")
+        print(
+            f"Current Accuracy: {val_accuracy}, Best Accuracy: {self.best_val_accuracy}"
+        )
 
         if self.early_stopping.early_stop:
             print("🛑 Early stopping triggered.")  # TODO: move prints to a logger
             return
 
         if val_accuracy > self.best_val_accuracy:
-            self.best_val_accuracy = val_accuracy  # TODO: log best_val_accuracy
-            path = (
-                self.config.checkpoint_dir
-                / f"{self.experiment_id}_{self.tag}_best_model.pt"
-            )
-            torch.save(self.model.state_dict(), path)
-            print(
-                f"✅ Best model saved at epoch {epoch+1} — Accuracy: {val_accuracy:.4f}"
-            )
+            try:
+                self.best_val_accuracy = val_accuracy  # TODO: log best_val_accuracy
+                path = (
+                    self.config.checkpoint_dir
+                    / f"{self.experiment_id}_{self.tag}_best_model.pt"
+                )
+                torch.save(self.model.state_dict(), path)
+                print(
+                    f"✅ Best model saved at epoch {epoch+1} — Accuracy: {val_accuracy:.4f}"
+                )
+            except Exception as e:
+                print(f"Error saving model checkpoint: {e}")
+                raise e
 
     def load_best_model(self):
         """Load the best model from disk.
@@ -149,7 +157,7 @@ class BaseTrainer(ABC):
             torch.load(
                 self.config.checkpoint_dir
                 / f"{self.experiment_id}_{self.tag}_best_model.pt",
-                weights_only=True
+                weights_only=True,
             )
         )
         return self.model

@@ -2,6 +2,7 @@ import cv2
 from PIL import Image
 import numpy as np
 
+
 def check_pil_opencv(img):
     if type(img) == np.ndarray:
         return "OpenCV"
@@ -9,10 +10,12 @@ def check_pil_opencv(img):
         return "PIL"
     return "unkown"
 
+
 def PIL2OpenCV(pil_img):
-    img = pil_img.convert('RGB')
+    img = pil_img.convert("RGB")
     open_cv_image = np.array(img)
     return open_cv_image[:, :, ::-1].copy()
+
 
 def OpenCV2PIL(ocv_img):
     # Convert BGR to RGB

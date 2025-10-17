@@ -3,6 +3,7 @@
 import cv2
 from .utils import PIL2OpenCV, OpenCV2PIL, check_pil_opencv
 
+
 class HistogramEqualization(object):
     def __init__(self):
         pass
@@ -16,6 +17,6 @@ class HistogramEqualization(object):
         return OpenCV2PIL(img)
 
     def histogram_equalization(self, img):
-        img_to_yuv = cv2.cvtColor(img,cv2.COLOR_RGB2YUV)
-        img_to_yuv[:,:,0] = cv2.equalizeHist(img_to_yuv[:,:,0])
+        img_to_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+        img_to_yuv[:, :, 0] = cv2.equalizeHist(img_to_yuv[:, :, 0])
         return cv2.cvtColor(img_to_yuv, cv2.COLOR_YUV2RGB)

@@ -19,5 +19,5 @@ SCHEDULERS_REGISTRY = {
     # Chained (combine multiple schedulers)
     "chained": sched.ChainedScheduler,
     "sequential": sched.SequentialLR,
-    "none": None
+    "none": None,
 }

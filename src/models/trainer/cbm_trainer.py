@@ -6,7 +6,9 @@ from models.trainer.standard_trainer import StandardTrainer
 
 
 class CBMTrainer:
-    def __init__(self, config, model, train_loader, val_loader, test_loader, trial=None):
+    def __init__(
+        self, config, model, train_loader, val_loader, test_loader, trial=None
+    ):
         """
         Initialize the CBMTrainer with model, data loaders, and training configuration.
 
@@ -40,7 +42,7 @@ class CBMTrainer:
             val_loader=val_loader,
             test_loader=test_loader,
             device=config.device,
-            trial=trial
+            trial=trial,
         )
 
         self.label_predictor_trainer = CBMLabelPredictorTrainer(
