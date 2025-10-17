@@ -34,51 +34,39 @@ GTSRB_basic_transform = transforms.Compose(
     [
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ]
 )
 
-reicnn_transform_TRAIN = transforms.Compose([
-    # 1. Primary Resizing (Deterministic - MUST be first for input consistency)
-    transforms.Resize((224, 224)),
-    
-    # 2. Random Augmentations (Best applied to PIL Image before ToTensor)
-    # This applies random changes to the whole image *before* custom deterministic steps.
-    transforms.RandomRotation(degrees=10),
-    transforms.RandomAffine(
-        degrees=0, 
-        translate=(0.1, 0.1),
-        scale=(0.9, 1.1),
-        shear=5
-    ),
-    transforms.ColorJitter(
-        brightness=0.15, 
-        contrast=0.15, 
-        saturation=0.15, 
-        hue=0.05
-    ),
-    
-    # 3. Deterministic Enhancement/Feature Extraction (Custom steps applied to the now-augmented PIL Image)
-    # These must be applied before ToTensor() if they are designed for PIL/Numpy input.
-    ContrastEnhancement(),
-    Retinex(),
-    HistogramEqualization(),
-    EdgeEnhancement(),
-
-    # 4. Conversion to Tensor (Deterministic - MUST be done before RandomErasing/Normalize)
-    transforms.ToTensor(),
-
-    # 5. Aggressive Pattern Masking (Requires Tensor input)
-    transforms.RandomErasing(
-        p=0.5, 
-        scale=(0.02, 0.2),
-        ratio=(0.3, 3.3),
-        value='random'
-    ),
-    
-    # 6. Final Normalization (MUST be the absolute last step)
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
+reicnn_transform_TRAIN = transforms.Compose(
+    [
+        # 1. Primary Resizing (Deterministic - MUST be first for input consistency)
+        transforms.Resize((224, 224)),
+        # 2. Random Augmentations (Best applied to PIL Image before ToTensor)
+        # This applies random changes to the whole image *before* custom deterministic steps.
+        transforms.RandomRotation(degrees=10),
+        transforms.RandomAffine(
+            degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=5
+        ),
+        transforms.ColorJitter(
+            brightness=0.15, contrast=0.15, saturation=0.15, hue=0.05
+        ),
+        # 3. Deterministic Enhancement/Feature Extraction (Custom steps applied to the now-augmented PIL Image)
+        # These must be applied before ToTensor() if they are designed for PIL/Numpy input.
+        ContrastEnhancement(),
+        Retinex(),
+        HistogramEqualization(),
+        EdgeEnhancement(),
+        # 4. Conversion to Tensor (Deterministic - MUST be done before RandomErasing/Normalize)
+        transforms.ToTensor(),
+        # 5. Aggressive Pattern Masking (Requires Tensor input)
+        transforms.RandomErasing(
+            p=0.5, scale=(0.02, 0.2), ratio=(0.3, 3.3), value="random"
+        ),
+        # 6. Final Normalization (MUST be the absolute last step)
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
 
 
 class GTSRBFactory(DatasetFactory):
@@ -94,7 +82,7 @@ class GTSRBFactory(DatasetFactory):
 
     def load_datasets(
         self,
-        train_transform=reicnn_transform_TRAIN,
+        train_transform=GTSRB_transform,
         test_transform=GTSRB_basic_transform,
     ):
         """Load GTSRB dataset and splits the training set into training and validation subsets.
@@ -110,7 +98,11 @@ class GTSRBFactory(DatasetFactory):
         logging.info(f"[DATA ACCESS] Loading GTSRB training dataset")
         full_train_dataset = ConceptAwareDataset(
             root_dir=self.config.data_path / "training",
-            concepts_file=self.config.concepts_file if hasattr(self.config, "concepts_file") else None,
+            concepts_file=(
+                self.config.concepts_file
+                if hasattr(self.config, "concepts_file")
+                else None
+            ),
             transform=train_transform,
         )
 
@@ -124,19 +116,31 @@ class GTSRBFactory(DatasetFactory):
             generator=torch.Generator().manual_seed(self.seed),
         )
 
-        self.train_dataset = torch.utils.data.Subset(full_train_dataset, train_indices.indices)
+        self.train_dataset = torch.utils.data.Subset(
+            full_train_dataset, train_indices.indices
+        )
 
         self.val_dataset = ConceptAwareDataset(
             root_dir=self.config.data_path / "training",
-            concepts_file=self.config.concepts_file if hasattr(self.config, "concepts_file") else None,
+            concepts_file=(
+                self.config.concepts_file
+                if hasattr(self.config, "concepts_file")
+                else None
+            ),
             transform=test_transform,
         )
-        self.val_dataset = torch.utils.data.Subset(self.val_dataset, val_indices.indices)
+        self.val_dataset = torch.utils.data.Subset(
+            self.val_dataset, val_indices.indices
+        )
 
         logging.info(f"[DATA ACCESS] Loading GTSRB test dataset")
         self.test_dataset = ConceptAwareDataset(
             root_dir=self.config.data_path / "test",
-            concepts_file=self.config.concepts_file if hasattr(self.config, "concepts_file") else None,
+            concepts_file=(
+                self.config.concepts_file
+                if hasattr(self.config, "concepts_file")
+                else None
+            ),
             transform=test_transform,
         )
 
