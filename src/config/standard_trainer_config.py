@@ -27,10 +27,21 @@ class StandardTrainerConfig:
     training: TrainingConfig = field(default_factory=TrainingConfig)
 
     def resolve(self):
+        self.experiment_id += f"_s{self.seed}"
         self.device = (
             f"cuda:{self.device_no}"
             if self.device == "cuda" and torch.cuda.is_available()
             else "cpu"
         )
+
+        try:
+            self.output_dir = Path(self.output_dir) / self.experiment_id
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Directory '{self.output_dir}' created successfully.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
         self.dataset.resolve()
-        self.training.resolve(output_dir=self.output_dir, experiment_id=self.experiment_id)
+        self.training.resolve(
+            output_dir=self.output_dir, experiment_id=self.experiment_id
+        )
