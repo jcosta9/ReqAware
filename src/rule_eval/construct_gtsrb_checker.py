@@ -17,18 +17,12 @@ def construct_full_graph():
     concept_graph_semantic_relation.add_concept(
         name="All concepts",
         concept_indices=list(range(43)),
-        constraint=[
-            Constraint("General concept invariant", lambda x: 3 <= np.sum(x) <= 6)
-        ]
     )
 
     # Level 1 Nodes
     concept_graph_semantic_relation.add_concept(
         name="All colors",
         concept_indices=list(range(0, 6)),
-        constraint=[
-            Constraint("General color constraint", lambda x: 1 <= np.sum(x) <= 2)
-        ]
     )
     concept_graph_semantic_relation.add_concept(
         name="All shapes",
@@ -40,9 +34,6 @@ def construct_full_graph():
     concept_graph_semantic_relation.add_concept(
         name="All symbols",
         concept_indices=list(range(10, 43)),
-        constraint=[
-            Constraint("Symbols constraint", lambda x: np.sum(x) <= 3)
-        ]
     )
 
     # Level 2 Nodes under "All colors"
@@ -61,34 +52,17 @@ def construct_full_graph():
         ]
     )
 
-    # Level 2 Nodes under "All symbols"
-    concept_graph_semantic_relation.add_concept(
-        name="Number symbols",
-        concept_indices=list(range(10, 18)),
-        constraint=[
-            Constraint("Numbers constraint", lambda x: np.sum(x) <= 3)
-        ]
-    )
     concept_graph_semantic_relation.add_concept(
         name="General symbols",
         concept_indices=list(range(18, 34)),
-        constraint=[
-            Constraint("General symbols constraint", lambda x: np.sum(x) <= 3)
-        ]
     )
     concept_graph_semantic_relation.add_concept(
         name="Curve symbols",
         concept_indices=list(range(34, 37)),
-        constraint=[
-            Constraint("Curve constraint", lambda x: np.sum(x) <= 1)
-        ]
     )
     concept_graph_semantic_relation.add_concept(
         name="Arrow symbols",
         concept_indices=list(range(37, 43)),
-        constraint=[
-            Constraint("Arrow constraint", lambda x: np.sum(x) <= 2)
-        ]
     )
 
     # Additional Nodes for Semantic Invariants
@@ -102,25 +76,17 @@ def construct_full_graph():
     concept_graph_semantic_relation.add_concept(
         name="Regulatory signs",
         concept_indices=regulatroty_signs_indices,
-        constraint=[
-            Constraint("Regulatory signs constraint", lambda x: np.sum(x) <= 3)
-        ]
     )
 
     # Level 3 Nodes under "Warning symbols"
     concept_graph_semantic_relation.add_concept(
         name="Curve symbols",
         concept_indices=list(range(34, 37)),
-        constraint=[
-            Constraint("Curve constraint", lambda x: np.sum(x) <= 1)
-        ]
     )
+    
     concept_graph_semantic_relation.add_concept(
         name="Warning symbols",
         concept_indices=warning_symbols_indices,  # Assuming these are already included; adjust if needed
-        constraint=[
-            Constraint("Warning symbols constraint", lambda x: np.sum(x) <= 1)
-        ]
     )
 
     concept_graph_semantic_relation.add_relation(
@@ -147,10 +113,10 @@ def construct_full_graph():
     )
 
     # Connect "All symbols" to its children
-    concept_graph_semantic_relation.add_relation(
-        from_node="All symbols",
-        to_node="Number symbols",
-    )
+    # concept_graph_semantic_relation.add_relation(
+    #     from_node="All symbols",
+    #     to_node="Number symbols",
+    # )
     concept_graph_semantic_relation.add_relation(
         from_node="All symbols",
         to_node="General symbols",
@@ -193,14 +159,10 @@ def construct_full_graph():
         ]
     )
     # adding relation between arrows and overall symbols
-    list(range(37,43))
     concept_graph_semantic_relation.add_relation(
-        from_node="Number symbols",
+        from_node="Arrow symbols",
         to_node="All symbols",
         concept_indices=list(range(10, 43)),
-        constraint=[
-            Constraint("If arrows present no other symbols", lambda x: False if (np.sum(x[37:43]) > 0 and (np.sum(x[10:43]) != np.sum(x[37:43]))) else True)
-        ]
     )
 
     # main_color and border_color need to be different colors
@@ -208,9 +170,6 @@ def construct_full_graph():
         from_node="Main colors",
         to_node="Border colors",
         concept_indices=list(range(0, 6)),
-        constraint=[
-            Constraint("Main and border color different", lambda x: False if (np.sum(x[0] + x[4]) == 2 or np.sum(x[1] + x[5]) == 2) else True)
-        ]
     )
 
     # this one is commented out since it holds true for the GTSRB set 
@@ -220,19 +179,6 @@ def construct_full_graph():
         from_node="Main colors",
         to_node="Arrow symbols",
         concept_indices=blue_arrow,
-        constraint=[
-            Constraint("Main blue => arrow (possible OOD)", lambda x: False if (np.sum(x[2] == 1 and np.sum(x[37:43]) == 0)) else True)
-        ]
-    )
-
-    # adding the constraint that if one number is found another number needs to be present
-    concept_graph_semantic_relation.add_relation(
-        from_node="Number symbols",
-        to_node="Number symbols",
-        concept_indices=list(range(10, 18)),
-        constraint=[
-            Constraint("One number", lambda x: False if np.sum(x[10:18]) == 1 else True)
-        ]
     )
     
     # adding relation between warning symbols, shpe and color
@@ -259,11 +205,8 @@ def construct_full_graph():
         from_node="Warning concepts",
         to_node="All shapes",
         concept_indices=warning_shape,
-        constraint=[
-            Constraint("Warning => Shape Triangle", lambda x: False if (np.sum(x[warning_indices]) == 1 and x[7] == 0) else True)
-        ]
     )
-    concept_graph_semantic_relation.print_hierarchy()
+    #concept_graph_semantic_relation.print_hierarchy()
     return concept_graph_semantic_relation
 
 if __name__ == "__main__":
