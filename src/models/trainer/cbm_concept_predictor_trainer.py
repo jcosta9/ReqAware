@@ -37,6 +37,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             config=self.config.fuzzy_loss, current_loss_fn=self.criterion
         )
         self.trial = trial
+        self.prediction_threshold = 0.8
 
     def compute_accuracy(self, outputs, concepts):
         """
@@ -46,7 +47,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             tuple: (predicted_concepts, correct_predictions, total_predictions, accuracy)
         """
         probs = torch.sigmoid(outputs)
-        predicted = probs > 0.5  # TODO: Threshold can be a config parameter
+        predicted = probs > self.prediction_threshold  # TODO: Threshold can be a config parameter
         correct = (predicted == concepts).sum().item()
         total = concepts.size(0) * concepts.size(1)
         accuracy = correct / total if total > 0 else 0.0
@@ -64,7 +65,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             correct, total
         """
         probs = torch.sigmoid(outputs)
-        predicted = probs > 0.5
+        predicted = probs > self.prediction_threshold
 
         correct = torch.sum(torch.all(predicted == concepts, dim=1))
         total = outputs.size(0)
@@ -98,7 +99,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         )
 
         if self.config.fuzzy_loss.use_fuzzy_loss:
-            logging.info(
+            print(
                 f"[MODEL] Using Fuzzy Loss with rules: {list(self.criterion.fuzzy_rules.keys())}"
             )
             running_loss_standard = 0.0
@@ -355,7 +356,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 probabilities = torch.sigmoid(outputs)
 
                 # Get binary predictions using threshold
-                predictions = (probabilities > 0.5).long()
+                predictions = (probabilities > self.prediction_threshold).long()
 
                 # Store batch results
                 all_logits.append(outputs.cpu().numpy())

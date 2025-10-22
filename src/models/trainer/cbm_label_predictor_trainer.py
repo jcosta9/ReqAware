@@ -27,6 +27,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
         val_loader,
         test_loader,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        concept_pred_threshold=0.5
     ):
 
         super().__init__(
@@ -40,7 +41,7 @@ class CBMLabelPredictorTrainer(BaseTrainer):
 
         self.tag += "label_predictor"
         self.concept_predictor = concept_predictor.to(self.device)
-        self.concepts_threshold = 0.5
+        self.concepts_threshold = concept_pred_threshold
 
     def compute_accuracy(self, outputs, targets):
         """
@@ -221,6 +222,9 @@ class CBMLabelPredictorTrainer(BaseTrainer):
             print(report)
             self.writer.add_text("Classification Report/Label_Predictor/Test", report, 0)
             return None, accuracy
+        
+        if mode == "eval":
+            return y_true, y_pred
 
         avg_loss = loss / len(dataloader.dataset)
 
