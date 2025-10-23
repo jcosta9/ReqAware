@@ -5,22 +5,10 @@ from models.architectures import CBMSequentialEfficientNetFCN
 from config import CBMTrainerConfig
 from models.trainer.cbm_trainer import CBMTrainer
 
-
-def cbm_load_config(config_path) -> CBMTrainerConfig:
-    """
-    Load the configuration from a YAML file.
-    """
-    # Load YAML
-    cfg_yaml = OmegaConf.load(config_path)
-    cfg_structured = OmegaConf.structured(CBMTrainerConfig)
-    cfg = OmegaConf.merge(cfg_structured, cfg_yaml)
-    cfg = OmegaConf.to_object(cfg)
-    cfg.resolve()
-    return cfg
-
+from config import load_config
 
 def main():
-    config = cbm_load_config(Path("files/configs/GTSRB_CBM_config.yaml"))
+    config = load_config(Path("files/configs/GTSRB_CBM_config.yaml"))
 
     # Dataset
     dataset_factory = config.dataset.factory(

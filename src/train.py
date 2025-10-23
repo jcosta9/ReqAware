@@ -5,22 +5,13 @@ from models.architectures import EfficientNetv2
 from models.trainer import StandardTrainer
 from config import StandardTrainerConfig
 
-
-def cnn_load_config(config_path):
-    """
-    Load the configuration from a YAML file.
-    """
-    # Load YAML
-    cfg_yaml = OmegaConf.load(config_path)
-    cfg_structured = OmegaConf.structured(StandardTrainerConfig)
-    cfg = OmegaConf.merge(cfg_structured, cfg_yaml)
-    cfg = OmegaConf.to_object(cfg)
-    cfg.resolve()
-    return cfg
-
+from config import load_config
 
 def main():
-    config = cnn_load_config(Path("files/configs/GTSRB_Baseline_config.yaml"))
+    config = load_config(
+        Path("files/configs/GTSRB_Baseline_config.yaml"),
+        configClass=StandardTrainerConfig
+        )
 
     # Dataset
     dataset_factory = config.dataset.factory(
