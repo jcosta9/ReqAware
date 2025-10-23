@@ -4,3 +4,6 @@ src/runs/*
 *.pt
 .nfs*
 events.out.tfevents.*
+venv/*
+*.csv
+*.xlsx
