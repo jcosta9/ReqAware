@@ -44,6 +44,7 @@ class BaseTrainer(ABC):
         val_loader,
         test_loader,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        trial=None,
     ):
         """
         Initialize the Trainer with model, data loaders, and training configuration.
@@ -69,9 +70,10 @@ class BaseTrainer(ABC):
             self.model.parameters(),
             lr=self.config.lr,
         )
-        self.scheduler = self.config.scheduler(  # TODO: Flexible scheduler
-            self.optimizer, **self.config.scheduler_params
-        )
+        if self.config.scheduler is not None:
+            self.scheduler = self.config.scheduler(  # TODO: Flexible scheduler
+                self.optimizer, **self.config.scheduler_params
+            )
         self.writer = SummaryWriter(
             log_dir=self.log_dir
         )  # TODO: separate class for logging
@@ -85,7 +87,13 @@ class BaseTrainer(ABC):
 
         if config.pretrained_weights is not None:
             print(f"Loading pretrained weights from: {config.pretrained_weights}")
-            self.model.load_state_dict(torch.load(config.pretrained_weightsm, weights_only=True))
+            try:
+                self.model.load_state_dict(
+                    torch.load(config.pretrained_weights, weights_only=True)
+                )
+            except Exception as e:
+                print(f"Error loading pretrained weights: {e}")
+                raise e
 
         # return self
 
@@ -113,22 +121,28 @@ class BaseTrainer(ABC):
         """
         self.early_stopping(val_accuracy, self.model)
 
-        print(f"Current Accuracy: {val_accuracy}, Best Accuracy: {self.best_val_accuracy}")
+        print(
+            f"Current Accuracy: {val_accuracy}, Best Accuracy: {self.best_val_accuracy}"
+        )
 
         if self.early_stopping.early_stop:
             print("🛑 Early stopping triggered.")  # TODO: move prints to a logger
             return
 
         if val_accuracy > self.best_val_accuracy:
-            self.best_val_accuracy = val_accuracy  # TODO: log best_val_accuracy
-            path = (
-                self.config.checkpoint_dir
-                / f"{self.experiment_id}_{self.tag}_best_model.pt"
-            )
-            torch.save(self.model.state_dict(), path)
-            print(
-                f"✅ Best model saved at epoch {epoch+1} — Accuracy: {val_accuracy:.4f}"
-            )
+            try:
+                self.best_val_accuracy = val_accuracy  # TODO: log best_val_accuracy
+                path = (
+                    self.config.checkpoint_dir
+                    / f"{self.experiment_id}_{self.tag}_best_model.pt"
+                )
+                torch.save(self.model.state_dict(), path)
+                print(
+                    f"✅ Best model saved at epoch {epoch+1} — Accuracy: {val_accuracy:.4f}"
+                )
+            except Exception as e:
+                print(f"Error saving model checkpoint: {e}")
+                raise e
 
     def load_best_model(self):
         """Load the best model from disk.
@@ -143,7 +157,7 @@ class BaseTrainer(ABC):
             torch.load(
                 self.config.checkpoint_dir
                 / f"{self.experiment_id}_{self.tag}_best_model.pt",
-                weights_only=True
+                weights_only=True,
             )
         )
         return self.model
@@ -165,7 +179,8 @@ class BaseTrainer(ABC):
 
             val_loss, val_accuracy = self.validate(epoch=epoch)
             self.save_checkpoint(epoch, val_accuracy)
-            self.scheduler.step(val_loss)
+            if self.config.scheduler is not None:
+                self.scheduler.step(val_loss)
 
             if self.early_stopping.early_stop:
                 break

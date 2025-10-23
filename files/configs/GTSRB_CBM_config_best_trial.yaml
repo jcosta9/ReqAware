@@ -1,7 +1,7 @@
-# this is from trial 188 in the optuna search trials
+# this is from trial 243 in the optuna search trials
 seed: 42
 device: cuda
-device_no: 1
+device_no: 2
 print_freq: 30
 output_dir: experiments
 dataset:
@@ -18,8 +18,8 @@ dataset:
 concept_predictor:
     log_dir: logs
     checkpoint_dir: models
-    lr: 0.005177584266812157
-    epochs: 25
+    lr: 0.007028926299376744
+    epochs: 30
     lr_step: 10
     lr_gamma: 0.5
     early_stopping_patience: 5
@@ -38,203 +38,203 @@ concept_predictor:
         rules:
             at_most_one_border_colour:
                 rule: AtMostOneBorderColour
-                fuzzy_lambda: 0.3035700885777168
+                fuzzy_lambda: 0.31880270078984146
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 9.205631295941531
+                            p: 1.869580151538137
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 9.205631295941531
+                            p: 1.869580151538137
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 9.205631295941531
+                            p: 1.869580151538137
                 params: 
                     border_colour_indices: [4,5]
             exactly_one_main_colour:
                 rule: ExactlyOneMainColour
-                fuzzy_lambda: 0.21740426752995107
+                fuzzy_lambda: 0.30490445877803335
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 25.012027025694195
+                            p: 21.585471213935044
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 25.012027025694195
+                            p: 21.585471213935044
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 25.012027025694195
+                            p: 21.585471213935044
                 params: 
                     main_colour_indices: [0,1,2,3]
             exactly_one_shape:
                 rule: ExactlyOneShape
-                fuzzy_lambda: 0.03761604952970285
+                fuzzy_lambda: 0.0012551184577584418
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 4.273109386483209
+                            p: 8.63458846746744
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 4.273109386483209
+                            p: 8.63458846746744
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 4.273109386483209
+                            p: 8.63458846746744
                 params: 
                     shape_indices: [6,7,8,9]
             between_two_and_three_numbers:
                 rule: BetweenTwoAndThreeNumbers
-                fuzzy_lambda: 0.6460770078722251
+                fuzzy_lambda: 0.5686343456383353
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 19.311920732141722
+                            p: 17.07648188149333
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 19.311920732141722
+                            p: 17.07648188149333
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 19.311920732141722
+                            p: 17.07648188149333
                 params: 
                     number_indices: [10,11,12,13,14,15,16,17]
             at_most_one_warning:
                 rule: AtMostOneWarning
-                fuzzy_lambda: 0.3389971879082053
+                fuzzy_lambda: 0.3776465828250607
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 17.799832613873487
+                            p: 15.348886183970444
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 17.799832613873487
+                            p: 15.348886183970444
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 17.799832613873487
+                            p: 15.348886183970444
                 params: 
                     warning_indices: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
             no_symbols_exactly_two_colours:
                 rule: NoSymbolsExactlyTwoColours
-                fuzzy_lambda: 0.07984781871314486
+                fuzzy_lambda: 0.13899789457987866
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 14.340037610292445
+                            p: 12.283115313672532
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 14.340037610292445
+                            p: 12.283115313672532
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 14.340037610292445
+                            p: 12.283115313672532
                 params: 
                     symbol_indices: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
                     colour_indices: [0, 1, 2, 3, 4, 5]
             warning_sign_exclusivity:
                 rule: WarningSignExclusivity
-                fuzzy_lambda: 0.37539874889303865
+                fuzzy_lambda: 0.029522925172270505
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 12.860798207479728
+                            p: 9.385125345928051
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 12.860798207479728
+                            p: 9.385125345928051
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 12.860798207479728
+                            p: 9.385125345928051
                 params: 
                     warning_indices: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
                     symbol_indices: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
             warning_implies_main_white:
                 rule: WarningImpliesMainWhite
-                fuzzy_lambda: 0.3048958402289558
+                fuzzy_lambda: 0.13548159613816838
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 11.124554293650696
+                            p: 3.9131923611108768
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 11.124554293650696
+                            p: 3.9131923611108768
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 11.124554293650696
+                            p: 3.9131923611108768
                 params: 
                     warning_indices: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
                     main_colour_white: [0]
             warning_implies_border_red:
                 rule: WarningImpliesBorderRed
-                fuzzy_lambda: 0.2976505020772003
+                fuzzy_lambda: 0.04873952980909707
                 operators:
                     t_norm:
                         class_name: yager_t_norm
                         params:
-                            p: 13.342479572178775
+                            p: 5.697551689522361
                             eps: 1e-6
                     t_conorm:
                         class_name: yager_t_conorm
                         params:
-                            p: 13.342479572178775
+                            p: 5.697551689522361
                             eps: 1e-6
                     a_aggregation:
                         class_name: product_a_aggregation
                     e_aggregation:
                         class_name: generalized_mean_e_aggregation
                         params:
-                            p: 13.342479572178775
+                            p: 5.697551689522361
                 params: 
                     warning_indices: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
                     border_red_index: [5]
@@ -245,7 +245,7 @@ label_predictor:
     epochs: 15
     lr_step: 10
     lr_gamma: 0.5
-    early_stopping_patience: 15
+    early_stopping_patience: 5
     momentum: 0.9
     weight_decay: 5e-4
     freeze: False

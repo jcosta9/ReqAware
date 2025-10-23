@@ -4,6 +4,7 @@ import logging
 import numpy as np
 from sklearn.metrics import classification_report
 
+import optuna
 import torch
 
 from models.loss import CustomFuzzyLoss
@@ -26,40 +27,50 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         val_loader,
         test_loader,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        trial=None,
     ):
 
-        super().__init__(
-            config,
-            experiment_id,
-            model,
-            train_loader,
-            val_loader,
-            test_loader,
-            device,
-        )
+        super().__init__(config, model, train_loader, val_loader, test_loader, device)
 
         self.tag += "concept_predictor"
         self.criterion = CustomFuzzyLoss(
             config=self.config.fuzzy_loss, current_loss_fn=self.criterion
         )
+        self.trial = trial
+        self.prediction_threshold = 0.8
 
     def compute_accuracy(self, outputs, concepts):
         """
-        Compute the accuracy of the model's predictions.
+        Compute the accuracy of the model's per concept accuracy.
+
+        Returns:
+            tuple: (predicted_concepts, correct_predictions, total_predictions, accuracy)
+        """
+        probs = torch.sigmoid(outputs)
+        predicted = probs > self.prediction_threshold  # TODO: Threshold can be a config parameter
+        correct = (predicted == concepts).sum().item()
+        total = concepts.size(0) * concepts.size(1)
+        accuracy = correct / total if total > 0 else 0.0
+        return predicted, correct, total, accuracy
+
+    def compute_accuracy_pre_prediction(self, outputs, concepts):
+        """
+        Compute the accuracy per prediction.
 
         Parameters:
             outputs (torch.Tensor): Model outputs.
             concepts (torch.Tensor): Ground truth concept labels.
 
         Returns:
-            tuple: (predicted_concepts, correct_predictions, total_predictions, accuracy)
+            correct, total
         """
         probs = torch.sigmoid(outputs)
-        predicted = (probs > 0.5).long()  # TODO: Threshold can be a config parameter
-        correct = (predicted == concepts).sum().item()
-        total = concepts.size(0) * concepts.size(1)
-        accuracy = correct / total if total > 0 else 0.0
-        return predicted, correct, total, accuracy
+        predicted = probs > self.prediction_threshold
+
+        correct = torch.sum(torch.all(predicted == concepts, dim=1))
+        total = outputs.size(0)
+
+        return correct, total
 
     def _train_epoch(self, epoch):
         """
@@ -77,6 +88,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         """
         running_loss = 0.0
         running_correct, running_total = 0, 0
+        per_prediction_correct, per_prediction_total = 0, 0
         STEPS = len(self.train_loader)
         global_step_base = epoch * STEPS
 
@@ -87,7 +99,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
         )
 
         if self.config.fuzzy_loss.use_fuzzy_loss:
-            logging.info(
+            print(
                 f"[MODEL] Using Fuzzy Loss with rules: {list(self.criterion.fuzzy_rules.keys())}"
             )
             running_loss_standard = 0.0
@@ -158,11 +170,22 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 _, correct, total, _ = self.compute_accuracy(outputs, concepts)
                 running_correct += correct
                 running_total += total
+                pred_correct, pred_total = self.compute_accuracy_pre_prediction(
+                    outputs, concepts
+                )
+                per_prediction_correct += pred_correct
+                per_prediction_total += pred_total
 
             avg_loss = running_loss / STEPS
             accuracy = running_correct / running_total
+            per_prediction_acc = per_prediction_correct / per_prediction_total
             self.writer.add_scalar("Loss/Train/Concept_Predictor", avg_loss, epoch)
             self.writer.add_scalar("Accuracy/Train/Concept_Predictor", accuracy, epoch)
+            self.writer.add_scalar(
+                "Per_Prediction_Accuracy/Train/Concept_Predictor",
+                per_prediction_acc,
+                epoch,
+            )
 
             if self.config.fuzzy_loss.use_fuzzy_loss:
                 avg_loss_standard = running_loss_standard / STEPS
@@ -219,7 +242,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         print(
             f"Train | Epoch: [{epoch + 1}/{self.config.epochs}] \
-                      Loss: {avg_loss:.4f}, Accuracy: {accuracy:.4f}"
+                      Loss: {avg_loss:.4f}, Accuracy per Concept: {accuracy:.6f}, Accuracy per Prediction: {per_prediction_acc:.6f}"
         )
         return accuracy
 
@@ -269,7 +292,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                         f"{mode.title()} [{batch_idx}/{STEPS}]"
                         + f" | Loss {loss:.10f} "
                     )
-                    progress.update(1)
+                progress.update(1)
 
         accuracy = running_correct / running_total
 
@@ -278,13 +301,16 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         if mode == "test":
             report = f"{classification_report(y_true, y_pred)}"
-            logging.info(report)
+            print(report)
             self.writer.add_text(
                 "Classification Report/Concept_Predictor/Test", report, 0
             )
             return None, accuracy
+        
+        if mode == "eval":
+            return y_true, y_pred
 
-        avg_loss = running_loss / STEPS
+        avg_loss = running_loss / running_total
 
         self.writer.add_scalar(
             f"Loss/{mode.upper()}/Concept_Predictor", avg_loss, epoch
@@ -299,10 +325,10 @@ class CBMConceptPredictorTrainer(BaseTrainer):
     def get_predictions(self, dataloader):
         """
         Perform a complete forward pass on the dataloader and return predictions and ground truth.
-        
+
         Parameters:
             dataloader (DataLoader): DataLoader containing the dataset to evaluate.
-            
+
         Returns:
             tuple: (concept_predictions, concept_ground_truth, concept_probabilities)
                 - concept_predictions (numpy.ndarray): Binary predictions for concepts (0 or 1)
@@ -310,38 +336,43 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 - concept_probabilities (numpy.ndarray): Probability scores for each concept
         """
         self.model.eval()
-        
+
         # Lists to store predictions and ground truth
         all_logits = []
         all_predictions = []
         all_ground_truth = []
         all_probabilities = []
-        
+
         # Process all batches
         with tqdm.tqdm(dataloader, desc="Getting predictions") as progress:
             for idx, inputs, (concepts, _) in progress:
                 inputs = inputs.to(self.device)
                 concepts = concepts.to(self.device)
-                
+
                 # Forward pass
                 outputs = self.model(inputs)
-                
+
                 # Convert logits to probabilities
                 probabilities = torch.sigmoid(outputs)
-                
+
                 # Get binary predictions using threshold
-                predictions = (probabilities > 0.5).long()
-                
+                predictions = (probabilities > self.prediction_threshold).long()
+
                 # Store batch results
                 all_logits.append(outputs.cpu().numpy())
                 all_predictions.append(predictions.cpu().numpy())
                 all_ground_truth.append(concepts.cpu().numpy())
                 all_probabilities.append(probabilities.cpu().numpy())
-        
+
         # Concatenate results from all batches
         all_logits = np.vstack(all_logits)
         concept_predictions = np.vstack(all_predictions)
         concept_ground_truth = np.vstack(all_ground_truth)
         concept_probabilities = np.vstack(all_probabilities)
-        
-        return all_logits, concept_predictions, concept_ground_truth, concept_probabilities
+
+        return (
+            all_logits,
+            concept_predictions,
+            concept_ground_truth,
+            concept_probabilities,
+        )

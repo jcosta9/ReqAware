@@ -1,6 +1,6 @@
 seed: 42
 device: cuda
-device_no: 2
+device_no: 0
 print_freq: 30
 output_dir: experiments
 dataset:
@@ -11,9 +11,9 @@ dataset:
     num_workers: 0
     shuffle_dataset: True
     pin_memory: True
-    data_path: data/raw/GTSRB/converted
+    data_path: ../data/raw/GTSRB/converted
     val_split: 0.2
-    concepts_file: data/raw/GTSRB/concepts/concepts_per_class.csv
+    concepts_file: ../data/raw/GTSRB/concepts/concepts_per_class.csv
 concept_predictor:
     log_dir: logs
     checkpoint_dir: models
@@ -24,7 +24,7 @@ concept_predictor:
     early_stopping_patience: 5
     momentum: 0.9
     weight_decay: 5e-4
-    freeze: False
+    freeze: True
     pretrained_weights: null
     criterion: bce_with_logits
     optimizer: sgd
@@ -44,7 +44,7 @@ label_predictor:
     early_stopping_patience: 5
     momentum: 0.9
     weight_decay: 5e-4
-    freeze: False
+    freeze: True
     pretrained_weights: null
     criterion: cross_entropy
     optimizer: adam

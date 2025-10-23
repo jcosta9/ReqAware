@@ -27,14 +27,13 @@ from .EfficientNetv2 import EfficientNetv2
 
 
 class CBMSequentialEfficientNetFCN(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, concepts_threshold=0.5):
         super(CBMSequentialEfficientNetFCN, self).__init__()
 
         self.config = config
+        self.concepts_threshold = concepts_threshold
 
-        self.concept_predictor = EfficientNetv2(
-            n_labels=self.config.dataset.n_concepts, device=self.config.device
-        )
+        self.concept_predictor = EfficientNetv2(n_labels=self.config.dataset.n_concepts)
 
         self.label_predictor = FCSoftmax(
             input_dim=self.config.dataset.n_concepts,
@@ -42,27 +41,13 @@ class CBMSequentialEfficientNetFCN(nn.Module):
             dropout=self.config.label_predictor.dropout,
         )
 
-        # if self.config.freeze_concept_predictor:
-        #     # TODO: check if model exists
-        #     logging.info(
-        #         f"Loading concept predictor model: {self.config.concept_predictor_file}"
-        #     )
-        #     filename_concept = os.path.join(
-        #         self.config.models_path, self.config.concept_predictor_file
-        #     )
-        #     self.concept_predictor.load_state_dict(torch.load(filename_concept))
-
-        # if self.config.freeze_label_predictor:
-        #     # TODO: check if model exists
-        #     logging.info(
-        #         f"Loading label predictor model: {self.config.label_predictor_file}"
-        #     )
-        #     filename_label = os.path.join(
-        #         self.config.models_path, self.config.label_predictor_file
-        #     )
-        #     self.label_predictor.load_state_dict(torch.load(filename_label))
+    def to(self, device):
+        self.concept_predictor.to(device)
+        self.label_predictor.to(device)
+        return self
 
     def forward(self, x):
         concepts = self.concept_predictor(x)
-        labels = self.label_predictor(concepts)
-        return concepts, labels
+        pred_concepts = (torch.sigmoid(concepts) > self.concepts_threshold).float()
+        labels = self.label_predictor(pred_concepts)
+        return pred_concepts, labels
