@@ -3,10 +3,6 @@ ARGS ?= ""
 
 .PHONY: test lint format clean train train-cbm
 
-# Run tests
-test:
-	PYTHONPATH=src pytest -v --tb=short test/
-
 # Lint the code (optional)
 lint:
 	flake8 src/ test/
