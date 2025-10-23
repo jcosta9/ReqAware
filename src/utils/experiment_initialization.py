@@ -68,3 +68,27 @@ def initialize_experiment(seed, device_no, config_file, model_type):
         return initialize_standard_cnn_experiment(seed, device_no, config_file)
     else:
         raise ValueError(f"Unknown model type: {model_type}")   
+    
+
+def load_cbm_model(config, directory, concept_train_loader, concept_val_loader, concept_test_loader,):
+    config.concept_predictor.pretrained_weights = directory
+    trainer = CBMTrainer(
+        config=config,
+        model=CBMSequentialEfficientNetFCN(config),
+        train_loader=concept_train_loader,
+        val_loader=concept_val_loader,
+        test_loader=concept_test_loader,
+    )
+    return trainer
+
+def load_standard_model(config, directory, train_loader, val_loader, test_loader):
+    config.training.pretrained_weights = directory
+    trainer = StandardTrainer(
+        config=config.training,
+        model=EfficientNetv2(config.dataset.n_labels).to(config.device),
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
+        device=config.device,
+    )
+    return trainer
