@@ -5,11 +5,11 @@ warning_indices = [21, 22, 25, 26, 27, 29, 30, 34, 35, 36]
 warning_symbols_indices = [21, 22, 25, 26, 27, 29, 30]
 regulatroty_signs_indices = [i for i in range(18,34) if i not in warning_indices]
 
-def construct_full_graph():
+def construct_full_graph(concepts_per_class_file):
     # === Implementing the Semantic Concept Graph ===
 
     # Initialize the Semantic ConceptGraph
-    concept_graph_semantic_relation = ConceptGraph()
+    concept_graph_semantic_relation = ConceptGraph(concepts_per_class_file)
 
     # === Adding Nodes ===
 

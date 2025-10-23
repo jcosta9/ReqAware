@@ -3,16 +3,7 @@ from typing import Callable
 import numpy as np
 import networkx as nx
 
-# creating the concept dictionary for mapping between index in concept vector and concept name
-CONCEPT_DICT = {}
-with open(
-    "../data/raw/GTSRB/concepts/concepts_per_class.csv",
-    mode="r",
-) as file:
-    reader = csv.reader(file)
-    header = next(reader)
-    for index, concept in enumerate(header[2:]):
-        CONCEPT_DICT[concept] = index
+
 
 
 class Constraint:
@@ -30,8 +21,19 @@ class Constraint:
 class ConceptGraph:
     """Graph-based structure where edges represent constraints."""
 
-    def __init__(self):
+    def __init__(self, concepts_per_class_file):
         self.graph = nx.DiGraph()
+
+        # creating the concept dictionary for mapping between index in concept vector and concept name
+        self.concept_dict = {}
+        with open(
+            concepts_per_class_file,
+            mode="r",
+        ) as file:
+            reader = csv.reader(file)
+            header = next(reader)
+            for index, concept in enumerate(header[2:]):
+                self.concept_dict[concept] = index
 
     def add_concept(
         self,
