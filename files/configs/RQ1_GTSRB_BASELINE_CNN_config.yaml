@@ -1,0 +1,30 @@
+# this is from trial 243 in the optuna search trials
+seed: 42
+device: cuda
+device_no: 0
+print_freq: 30
+output_dir: experiments_baseline_cnn
+dataset:
+    name: gtsrb
+    n_labels: 43
+    batch_size: 64
+    num_workers: 50
+    shuffle_dataset: True
+    pin_memory: True
+    data_path: ../../../data/raw/GTSRB/converted
+    val_split: 0.2
+training:
+    log_dir: logs
+    checkpoint_dir: standard_models
+    lr: 0.0001
+    epochs: 30
+    lr_step: 10
+    lr_gamma: 0.5
+    early_stopping_patience: 5
+    momentum: 0.9
+    weight_decay: 10e-4
+    freeze: False
+    pretrained_weights: null
+    criterion: cross_entropy
+    optimizer: adam
+    scheduler: none
