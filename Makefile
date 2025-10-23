@@ -27,3 +27,7 @@ train:
 
 train-cbm:
 	python src/train_cbm.py $(ARGS)
+
+reproduce-experiments:
+	python src/reproduce_experiments.py --seeds 4 --device_no 0 --baseline_cnn --reqaware --vanilla_cbm
+	python src/collect_results.py
