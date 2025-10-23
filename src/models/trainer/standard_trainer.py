@@ -137,7 +137,7 @@ class StandardTrainer(BaseTrainer):
                         f"{mode.title()} [{batch_idx}/{STEPS}]"
                         + f" | Loss {loss:.10f} "
                     )
-                    progress.update(1)
+                progress.update(1)
 
         accuracy = running_correct / running_total
 
