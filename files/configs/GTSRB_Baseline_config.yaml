@@ -10,7 +10,7 @@ dataset:
     num_workers: 0
     shuffle_dataset: True
     pin_memory: True
-    data_path: data/raw/GTSRB/converted
+    data_path: ../../data/raw/GTSRB/converted
     val_split: 0.2
 training:
     log_dir: logs

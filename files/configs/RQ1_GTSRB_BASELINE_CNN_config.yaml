@@ -3,7 +3,7 @@ seed: 42
 device: cuda
 device_no: 0
 print_freq: 30
-output_dir: experiments_baseline_cnn
+output_dir: experiments/RQ/baseline_cnn
 dataset:
     name: gtsrb
     n_labels: 43
@@ -17,7 +17,7 @@ training:
     log_dir: logs
     checkpoint_dir: standard_models
     lr: 0.0001
-    epochs: 30
+    epochs: 1
     lr_step: 10
     lr_gamma: 0.5
     early_stopping_patience: 5

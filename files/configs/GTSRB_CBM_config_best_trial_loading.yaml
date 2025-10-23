@@ -12,9 +12,9 @@ dataset:
     num_workers: 0
     shuffle_dataset: True
     pin_memory: True
-    data_path: ../data/raw/GTSRB/converted
+    data_path: ../../../data/raw/GTSRB/converted
     val_split: 0.2
-    concepts_file: ../data/raw/GTSRB/concepts/concepts_per_class.csv
+    concepts_file: ../../../data/raw/GTSRB/concepts/concepts_per_class.csv
 concept_predictor:
     log_dir: logs
     checkpoint_dir: models
