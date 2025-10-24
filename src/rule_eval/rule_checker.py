@@ -14,18 +14,14 @@ with open(
     for index, concept in enumerate(header[2:]):
         CONCEPT_DICT[concept] = index
 
-
 class Constraint:
     # Since the proposed constraints are simple boolean functions, we can use a lambda functions to define and check them
     def __init__(self, name: str, invariant: Callable):
         self.name = name
-        self.invariant = (
-            invariant  # The actual constraint to check written as a callable function
-        )
+        self.invariant = invariant  # The actual constraint to check written as a callable function
 
     def check(self, concept_vector: list) -> bool:
         return self.invariant(concept_vector)
-
 
 class ConceptGraph:
     """Graph-based structure where edges represent constraints."""
@@ -33,13 +29,7 @@ class ConceptGraph:
     def __init__(self):
         self.graph = nx.DiGraph()
 
-    def add_concept(
-        self,
-        name: str,
-        concept_indices: list,
-        constraint: list = None,
-        print_hierarchy=False,
-    ):
+    def add_concept(self, name: str, concept_indices: list, constraint: list = None, print_hierarchy=False):
         """Adds a node with associated concept indices and by default prints the new hierarchy."""
         self.graph.add_node(
             name, concept_indices=concept_indices, constraint=constraint
@@ -63,9 +53,7 @@ class ConceptGraph:
             from_node, to_node, concept_indices=concept_indices, constraint=constraint
         )
 
-    def check_concept_vector(
-        self, concept_vector: np.ndarray, verbose=False, early_stop=False
-    ) -> list:
+    def check_concept_vector(self, concept_vector: np.ndarray, verbose=False, early_stop = False) -> list:
         """
         Traverses the graph and checks each edge's constraint.
         Returns a list of violated constraints.
