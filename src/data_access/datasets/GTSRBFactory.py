@@ -69,7 +69,6 @@ class GTSRBFactory(DatasetFactory):
         self,
         train_transform=GTSRB_transform,
         test_transform=GTSRB_basic_transform,
-        test_transform=GTSRB_basic_transform,
     ):
         """Load GTSRB dataset and splits the training set into training and validation subsets.
 
@@ -107,7 +106,7 @@ class GTSRBFactory(DatasetFactory):
             range(len(full_train_dataset)),
             [train_size, val_size],
             generator=torch.Generator().manual_seed(self.seed),
-        )
+        ))
 
         self.train_dataset = torch.utils.data.Subset(
             full_train_dataset, train_indices.indices
