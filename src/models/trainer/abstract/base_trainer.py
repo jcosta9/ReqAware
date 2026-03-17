@@ -44,7 +44,7 @@ class BaseTrainer(ABC):
         val_loader,
         test_loader,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-        trial=None
+        trial=None,
     ):
         """
         Initialize the Trainer with model, data loaders, and training configuration.
@@ -88,7 +88,9 @@ class BaseTrainer(ABC):
         if config.pretrained_weights is not None:
             print(f"Loading pretrained weights from: {config.pretrained_weights}")
             try:
-                self.model.load_state_dict(torch.load(config.pretrained_weights, weights_only=True))
+                self.model.load_state_dict(
+                    torch.load(config.pretrained_weights, weights_only=True)
+                )
             except Exception as e:
                 print(f"Error loading pretrained weights: {e}")
                 raise e
@@ -155,7 +157,7 @@ class BaseTrainer(ABC):
             torch.load(
                 self.config.checkpoint_dir
                 / f"{self.experiment_id}_{self.tag}_best_model.pt",
-                weights_only=True
+                weights_only=True,
             )
         )
         return self.model

@@ -30,7 +30,7 @@ class EfficientNetv2(nn.Module):
             weights=models.EfficientNet_V2_S_Weights.DEFAULT
         )
 
-        #TODO: config param for requires_grad
+        # TODO: config param for requires_grad
         if freeze_backbone:
             for params in self.predictor.parameters():
                 params.requires_grad = False

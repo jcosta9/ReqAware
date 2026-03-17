@@ -1,2 +1,4 @@
 from .standard_trainer import StandardTrainer
 from .cbm_trainer import CBMTrainer
+from .cbm_concept_predictor_trainer import CBMConceptPredictorTrainer
+from .cbm_label_predictor_trainer import CBMLabelPredictorTrainer

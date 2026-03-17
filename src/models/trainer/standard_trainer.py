@@ -27,9 +27,9 @@ class StandardTrainer(BaseTrainer):
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
 
-        super().__init__(
-            config, model, train_loader, val_loader, test_loader, device
-        )
+        super().__init__(config, model, train_loader, val_loader, test_loader, device)
+
+        self.tag += "standard_cnn"
 
     def _train_epoch(self, epoch):
         """
@@ -147,18 +147,15 @@ class StandardTrainer(BaseTrainer):
         if mode == "test":
             report = f"Labels: \n {classification_report(y_true, y_pred)}"
             logging.info(report)
-            self.writer.add_text(
-                "Classification Report/Test", report, 0
-            )
+            self.writer.add_text("Classification Report/Test", report, 0)
             return None, accuracy
+        
+        if mode == "eval":
+            return y_true, y_pred
 
         avg_loss = running_loss / STEPS
 
-        self.writer.add_scalar(
-            f"Loss/{mode.upper()}", avg_loss, epoch
-        )
-        self.writer.add_scalar(
-            f"Accuracy/{mode.upper()}", accuracy, epoch
-        )
+        self.writer.add_scalar(f"Loss/{mode.upper()}", avg_loss, epoch)
+        self.writer.add_scalar(f"Accuracy/{mode.upper()}", accuracy, epoch)
 
         return avg_loss, accuracy

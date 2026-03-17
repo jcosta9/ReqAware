@@ -57,6 +57,10 @@ class ConceptDatasetConfig(DatasetConfig):
                 "Concept map not loaded. Ensure concepts_file is provided and resolved."
             )
 
+    @classmethod
+    def from_parent(cls, parent: DatasetConfig, **kwargs):
+        return cls(**parent.__dict__, **kwargs)
+
     def extra_resolve(self):
         super().extra_resolve()
 

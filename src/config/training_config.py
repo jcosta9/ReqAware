@@ -30,7 +30,7 @@ class TrainingConfig:
     scheduler: str = "cosine_annealing"
     scheduler_params: Dict[str, Any] = field(default_factory=dict)
 
-    def resolve(self, output_dir:Path, experiment_id:str):
+    def resolve(self, output_dir: Path, experiment_id: str):
         if self.criterion in CRITERIONS_REGISTRY:
             self.criterion = CRITERIONS_REGISTRY[self.criterion]
         else:
@@ -50,7 +50,7 @@ class TrainingConfig:
             raise FileNotFoundError(
                 f"Data path {self.pretrained_weights} does not exist"
             )
-        
+
         try:
             self.log_dir = output_dir / self.log_dir
             self.log_dir.mkdir(parents=True, exist_ok=True)

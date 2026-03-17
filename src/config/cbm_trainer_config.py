@@ -28,6 +28,7 @@ class CBMTrainerConfig:
     )
 
     def resolve(self):
+        self.experiment_id += f"_s{self.seed}"
         self.device = (
             f"cuda:{self.device_no}"
             if self.device == "cuda" and torch.cuda.is_available()
@@ -40,10 +41,13 @@ class CBMTrainerConfig:
             print(f"Directory '{self.output_dir}' created successfully.")
         except Exception as e:
             print(f"An error occurred: {e}")
-            
 
         self.dataset.resolve()
-        self.concept_predictor.resolve(output_dir=self.output_dir, experiment_id=self.experiment_id)
-        self.label_predictor.resolve(output_dir=self.output_dir, experiment_id=self.experiment_id)
+        self.concept_predictor.resolve(
+            output_dir=self.output_dir, experiment_id=self.experiment_id
+        )
+        self.label_predictor.resolve(
+            output_dir=self.output_dir, experiment_id=self.experiment_id
+        )
 
         self.concept_predictor.fuzzy_loss.concept_map = self.dataset.get_concept_map()

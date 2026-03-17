@@ -27,14 +27,13 @@ from .EfficientNetv2 import EfficientNetv2
 
 
 class CBMSequentialEfficientNetFCN(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, concepts_threshold=0.5):
         super(CBMSequentialEfficientNetFCN, self).__init__()
 
         self.config = config
+        self.concepts_threshold = concepts_threshold
 
-        self.concept_predictor = EfficientNetv2(
-            n_labels=self.config.dataset.n_concepts
-        )
+        self.concept_predictor = EfficientNetv2(n_labels=self.config.dataset.n_concepts)
 
         self.label_predictor = FCSoftmax(
             input_dim=self.config.dataset.n_concepts,
@@ -49,5 +48,6 @@ class CBMSequentialEfficientNetFCN(nn.Module):
 
     def forward(self, x):
         concepts = self.concept_predictor(x)
-        labels = self.label_predictor(concepts)
-        return concepts, labels
+        pred_concepts = (torch.sigmoid(concepts) > self.concepts_threshold).float()
+        labels = self.label_predictor(pred_concepts)
+        return pred_concepts, labels
