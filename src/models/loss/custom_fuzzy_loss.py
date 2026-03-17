@@ -54,7 +54,7 @@ class CustomFuzzyLoss(nn.Module):
         for rule_name, rule_module in self.fuzzy_rules.items():
             # Calculate the loss for one rule (already averaged over the batch)
             rule_loss = rule_module(y_pred).mean()
-            self.last_individual_losses[rule_name] = rule_loss.detach()
+            self.last_individual_losses[rule_name] = rule_loss.detach() * self.fuzzy_lambdas[rule_name]
 
             # Weight it by its specific lambda and add to the total
             total_fuzzy_loss += self.fuzzy_lambdas[rule_name] * rule_loss

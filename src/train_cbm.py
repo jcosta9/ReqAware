@@ -5,6 +5,12 @@ from models.architectures import CBMSequentialEfficientNetFCN
 from config import CBMTrainerConfig
 from models.trainer.cbm_trainer import CBMTrainer
 
+from numpy.random import seed as set_numpy_seed
+from torch import manual_seed as set_torch_seed
+from torch.cuda import manual_seed_all as set_torch_cuda_seed
+from random import seed as set_random_seed
+from torch.backends import cudnn
+
 
 def cbm_load_config(config_path) -> CBMTrainerConfig:
     """
@@ -18,10 +24,18 @@ def cbm_load_config(config_path) -> CBMTrainerConfig:
     cfg.resolve()
     return cfg
 
+def set_reproducibility_seed(seed):
+    set_random_seed(seed)
+    set_numpy_seed(seed)
+    set_torch_seed(seed)
+    set_torch_cuda_seed(seed)
+    cudnn.deterministic = True
+    cudnn.benchmark = False
 
 def main():
-    config = cbm_load_config(Path("files/configs/GTSRB_CBM_config.yaml"))
+    config = cbm_load_config(Path("files/configs/testing_other_e.yaml"))
 
+    set_reproducibility_seed(config.seed)
     # Dataset
     dataset_factory = config.dataset.factory(
         seed=config.seed, config=config.dataset
@@ -46,8 +60,6 @@ def main():
         test_loader=test_loader,
     )
     trainer.train()
-
-    # return dataset_factory, model, trainer
 
 
 if __name__ == "__main__":

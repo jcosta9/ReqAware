@@ -16,6 +16,20 @@ from models.architectures import CBMSequentialEfficientNetFCN, EfficientNetv2
 from models.loss.custom_fuzzy_loss import CustomFuzzyLoss
 from train_cbm import cbm_load_config
 from train import cnn_load_config
+
+from numpy.random import seed as set_numpy_seed
+from torch import manual_seed as set_torch_seed
+from torch.cuda import manual_seed_all as set_torch_cuda_seed
+from random import seed as set_random_seed
+from torch.backends import cudnn
+
+def set_reproducibility_seed(seed):
+    set_random_seed(seed)
+    set_numpy_seed(seed)
+    set_torch_seed(seed)
+    set_torch_cuda_seed(seed)
+    cudnn.deterministic = True
+    cudnn.benchmark = False
     
 def objective_baseline_cnn(trial, base_config, args):
     """Objective function for baseline CBM (without fuzzy loss)."""
@@ -131,6 +145,7 @@ def fuzzy_objective(trial, base_config, args):
     """
     # Create a deep copy of the base config to avoid modifying the original
     config = copy.deepcopy(base_config)
+    set_random_seed(base_config.seed)
     
     # if cuda is available us the device from the config (where all the data is)
     if not torch.cuda.is_available():
@@ -140,9 +155,6 @@ def fuzzy_objective(trial, base_config, args):
     else:
         device = f"{config.device}"
     
-    # Sample hyperparameters for this trial
-    config.concept_predictor.lr = trial.suggest_float("lr", 0.0001, 0.01, log=True)
-    
     # Update lambda and p values for fuzzy logic rules
     rules = config.concept_predictor.fuzzy_loss.rules
     for rule_name in rules:
@@ -150,7 +162,7 @@ def fuzzy_objective(trial, base_config, args):
         p_key = f"p_{rule_name}"
         
         # Sample lambda value for this rule
-        rules[rule_name].fuzzy_lambda = trial.suggest_float(lambda_key, 0.0001, 0.8)
+        rules[rule_name].fuzzy_lambda = trial.suggest_float(lambda_key, 0.001, 0.6)
         
         # Sample p value for operators if they exist
         if hasattr(rules[rule_name], 'operators'):
@@ -323,7 +335,7 @@ def main():
     
     # Load appropriate base configuration
     if args.model_type == "cbm_fuzzy":
-        base_config = cbm_load_config(Path("files/configs/GTSRB_CBM_config_best_trial_loading.yaml"))
+        base_config = cbm_load_config(Path("files/configs/GTSRB_CBM_config_best_trial_testing.yaml"))
     elif args.model_type == "baseline_cbm":
         base_config = cbm_load_config(Path("files/configs/GTSRB_CBM_config.yaml"))
     elif args.model_type == "baseline_cnn":

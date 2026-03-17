@@ -8,7 +8,7 @@ dataset:
     n_labels: 43
     n_concepts: 43
     batch_size: 128
-    num_workers: 0
+    num_workers: 24
     shuffle_dataset: True
     pin_memory: True
     data_path: ../data/raw/GTSRB/converted
@@ -17,7 +17,7 @@ dataset:
 concept_predictor:
     log_dir: logs
     checkpoint_dir: models
-    lr: 0.009855106176213905
+    lr: 0.0001
     epochs: 30
     lr_step: 10
     lr_gamma: 0.5

@@ -109,7 +109,7 @@ class BaseTrainer(ABC):
         """
         return self.test(dataloader=self.val_loader, epoch=epoch, mode="val")
 
-    def save_checkpoint(self, epoch, val_accuracy):
+    def save_checkpoint(self, epoch, criterion, loss=False):
         """
         Save the model checkpoint if validation accuracy improves.
 
@@ -117,23 +117,29 @@ class BaseTrainer(ABC):
             epoch (int): Current epoch number.
             val_accuracy (float): Validation accuracy of the current epoch.
         """
-        self.early_stopping(val_accuracy, self.model)
+        if not loss:
+            self.early_stopping(criterion, self.model)
+        if loss:
+            self.early_stopping(- criterion, self.model)
 
-        print(f"Current Accuracy: {val_accuracy}, Best Accuracy: {self.best_val_accuracy}")
+        if not loss:
+            print(f"Current Validation Set Accuracy: {criterion}, Best Accuracy: {self.best_val_accuracy}")
+        else:
+            print(f"Current Validation Set Loss: {criterion}, Best Accuracy: {self.best_val_accuracy}")
 
         if self.early_stopping.early_stop:
             print("🛑 Early stopping triggered.")  # TODO: move prints to a logger
             return
 
-        if val_accuracy > self.best_val_accuracy:
-            self.best_val_accuracy = val_accuracy  # TODO: log best_val_accuracy
+        if criterion > self.best_val_accuracy:
+            self.best_val_accuracy = criterion  # TODO: log best_val_accuracy
             path = (
                 self.config.checkpoint_dir
                 / f"{self.experiment_id}_{self.tag}_best_model.pt"
             )
             torch.save(self.model.state_dict(), path)
             print(
-                f"✅ Best model saved at epoch {epoch+1} — Accuracy: {val_accuracy:.4f}"
+                f"✅ Best model saved at epoch {epoch+1} — Accuracy: {criterion:.4f}"
             )
 
     def load_best_model(self):

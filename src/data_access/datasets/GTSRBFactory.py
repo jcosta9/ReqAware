@@ -14,12 +14,6 @@ import torchvision.transforms as transforms
 
 from data_access.data_factory import DatasetFactory
 from data_access.concepts.ConceptAwareDataSet import ConceptAwareDataset
-from data_access.preprocess import (
-    ContrastEnhancement,
-    Retinex,
-    HistogramEqualization,
-    EdgeEnhancement,
-)
 
 
 GTSRB_transform = transforms.Compose(
@@ -40,30 +34,15 @@ GTSRB_basic_transform = transforms.Compose(
 
 reicnn_transform_TRAIN = transforms.Compose(
     [
-        # 1. Primary Resizing (Deterministic - MUST be first for input consistency)
         transforms.Resize((224, 224)),
-        # 2. Random Augmentations (Best applied to PIL Image before ToTensor)
-        # This applies random changes to the whole image *before* custom deterministic steps.
-        transforms.RandomRotation(degrees=10),
+        transforms.RandomRotation(degrees=60),
         transforms.RandomAffine(
             degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=5
         ),
         transforms.ColorJitter(
-            brightness=0.15, contrast=0.15, saturation=0.15, hue=0.05
+            brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1
         ),
-        # 3. Deterministic Enhancement/Feature Extraction (Custom steps applied to the now-augmented PIL Image)
-        # These must be applied before ToTensor() if they are designed for PIL/Numpy input.
-        ContrastEnhancement(),
-        Retinex(),
-        HistogramEqualization(),
-        EdgeEnhancement(),
-        # 4. Conversion to Tensor (Deterministic - MUST be done before RandomErasing/Normalize)
         transforms.ToTensor(),
-        # 5. Aggressive Pattern Masking (Requires Tensor input)
-        transforms.RandomErasing(
-            p=0.5, scale=(0.02, 0.2), ratio=(0.3, 3.3), value="random"
-        ),
-        # 6. Final Normalization (MUST be the absolute last step)
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ]
 )
@@ -93,8 +72,6 @@ class GTSRBFactory(DatasetFactory):
             test_transform (callable, optional): Data transformations for test set.
                                                                 Defaults to GTSRB_train_transform.
         """
-        print(f"train_transform: {train_transform}")
-        print(f"test_transform: {test_transform}")
         logging.info(f"[DATA ACCESS] Loading GTSRB training dataset")
         full_train_dataset = ConceptAwareDataset(
             root_dir=self.config.data_path / "training",

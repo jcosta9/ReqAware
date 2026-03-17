@@ -19,7 +19,7 @@ concept_predictor:
     log_dir: logs
     checkpoint_dir: models
     lr: 0.0001
-    epochs: 40
+    epochs: 30
     lr_step: 10
     lr_gamma: 0.5
     early_stopping_patience: 5
@@ -57,7 +57,7 @@ concept_predictor:
                     border_colour_indices: [4,5]
             exactly_one_main_colour:
                 rule: ExactlyOneMainColour
-                fuzzy_lambda: 0.30490445877803335
+                fuzzy_lambda: 0.030490445877803335
                 operators:
                     t_norm:
                         class_name: yager_t_norm
@@ -79,7 +79,7 @@ concept_predictor:
                     main_colour_indices: [0,1,2,3]
             exactly_one_shape:
                 rule: ExactlyOneShape
-                fuzzy_lambda: 0.0012551184577584418
+                fuzzy_lambda: 0.012551184577584418
                 operators:
                     t_norm:
                         class_name: yager_t_norm
@@ -99,31 +99,9 @@ concept_predictor:
                             p: 8.63458846746744
                 params: 
                     shape_indices: [6,7,8,9]
-            between_two_and_three_numbers:
-                rule: BetweenTwoAndThreeNumbers
-                fuzzy_lambda: 0.5686343456383353
-                operators:
-                    t_norm:
-                        class_name: yager_t_norm
-                        params:
-                            p: 17.07648188149333
-                            eps: 1e-6
-                    t_conorm:
-                        class_name: yager_t_conorm
-                        params:
-                            p: 17.07648188149333
-                            eps: 1e-6
-                    a_aggregation:
-                        class_name: product_a_aggregation
-                    e_aggregation:
-                        class_name: generalized_mean_e_aggregation
-                        params:
-                            p: 17.07648188149333
-                params: 
-                    number_indices: [10,11,12,13,14,15,16,17]
             at_most_one_warning:
                 rule: AtMostOneWarning
-                fuzzy_lambda: 0.3776465828250607
+                fuzzy_lambda: 0.06776465828250607
                 operators:
                     t_norm:
                         class_name: yager_t_norm
@@ -214,7 +192,7 @@ concept_predictor:
                     main_colour_white: [0]
             warning_implies_border_red:
                 rule: WarningImpliesBorderRed
-                fuzzy_lambda: 0.04873952980909707
+                fuzzy_lambda: 0.4873952980909707
                 operators:
                     t_norm:
                         class_name: yager_t_norm
@@ -245,10 +223,10 @@ label_predictor:
     early_stopping_patience: 5
     momentum: 0.9
     weight_decay: 5e-4
-    freeze: True
+    freeze: False
     pretrained_weights: null
     criterion: cross_entropy
-    optimizer: adam
+    optimizer: adam 
     scheduler: reduce_on_plateau
     scheduler_params: 
         mode: min

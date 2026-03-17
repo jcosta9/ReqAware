@@ -25,7 +25,7 @@ training:
     pretrained_weights: null
     checkpoint_dir: models
     criterion: cross_entropy
-    optimizer: adamw
+    optimizer: adam
     scheduler: cosine_annealing
     scheduler_params: 
         T_max: 10

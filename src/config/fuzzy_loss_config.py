@@ -50,8 +50,6 @@ class FuzzyLossCustomRules:
     params: Dict = field(default_factory=dict)
 
     def resolve(self):
-        if not (0 <= self.fuzzy_lambda <= 1):
-            raise ValueError("fuzzy_lambda must be between 0 and 1")
 
         if self.rule in CUSTOM_RULES_REGISTRY:
             self.rule = CUSTOM_RULES_REGISTRY[self.rule]
