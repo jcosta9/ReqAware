@@ -32,6 +32,7 @@ class CBMConceptPredictorTrainer(BaseTrainer):
 
         super().__init__(config, model, train_loader, val_loader, test_loader, device)
 
+        # self.added_fuzzy_loss_individual = None
         self.tag += "concept_predictor"
         self.criterion = CustomFuzzyLoss(
             config=self.config.fuzzy_loss, current_loss_fn=self.criterion
@@ -239,6 +240,19 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                             logging.warning(
                                 f"Could not log gradient histogram for {name} at epoch {epoch}: {e}"
                             )
+
+        # Lagrangian Optimization
+        if self.config.fuzzy_loss.use_fuzzy_loss and self.config.fuzzy_loss.use_lagrangian_optimization:
+            print("lagrangian optimization")
+            for name, loss_val in running_loss_individual.items():
+                epoch_avg_violation = loss_val / STEPS
+                rho = 0.1
+                # rho = self.config.fuzzy_loss.rules[name].rho
+
+                old_lambda = self.criterion.fuzzy_lambdas[name]
+                new_lambda = old_lambda + rho * epoch_avg_violation
+                self.criterion.fuzzy_lambdas[name] = new_lambda
+                print(name, new_lambda)
 
         print(
             f"Train | Epoch: [{epoch + 1}/{self.config.epochs}] \

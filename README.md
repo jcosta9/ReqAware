@@ -57,6 +57,9 @@ This repository provides an implementation of the paper *"Leveraging Domain Requ
 2. Create a virtual environment and install dependencies:
 
    ```bash
+   conda env create -f environment.yml
+   conda activate trainreq
+   
    python -m venv venv
    source venv/bin/activate       # (Linux/Mac)
    venv\Scripts\activate          # (Windows)

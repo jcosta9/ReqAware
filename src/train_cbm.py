@@ -8,7 +8,7 @@ from models.trainer.cbm_trainer import CBMTrainer
 from config import load_config
 
 def main():
-    config = load_config(Path("files/configs/GTSRB_CBM_config.yaml"))
+    config = load_config(Path("files/configs/GTSRB_CBM_config_best_trial_loading.yaml"))
 
     # Dataset
     dataset_factory = config.dataset.factory(
