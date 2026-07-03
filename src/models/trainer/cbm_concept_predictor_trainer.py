@@ -254,6 +254,26 @@ class CBMConceptPredictorTrainer(BaseTrainer):
                 self.criterion.fuzzy_lambdas[name] = new_lambda
                 print(name, new_lambda)
 
+                """
+                baseline without lagrangian optimization
+
+                different rho values from 0.001 (0.0001?) to 0.3 (10 different values)
+
+                200 epochs with early stopping
+                lr from 0.0001 to 0.05 (10 different values)
+
+                monitoring:
+                - per rule loss/violation
+                - cross entropy loss (task loss)
+                - lamdas per rule and epoch
+                - general performance (accuracy, loss))
+
+                first implement tensor board
+                try 1 run
+                implement test matrix
+                
+                """
+
         print(
             f"Train | Epoch: [{epoch + 1}/{self.config.epochs}] \
                       Loss: {avg_loss:.4f}, Accuracy per Concept: {accuracy:.6f}, Accuracy per Prediction: {per_prediction_acc:.6f}"

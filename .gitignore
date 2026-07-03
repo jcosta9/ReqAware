@@ -7,3 +7,5 @@ events.out.tfevents.*
 venv/*
 *.csv
 *.xlsx
+.vscode
+.idea

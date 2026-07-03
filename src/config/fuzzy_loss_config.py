@@ -80,7 +80,7 @@ class FuzzyLossCustomRules:
 @dataclass
 class FuzzyLossConfig:
     use_fuzzy_loss: bool = False
-    use_lagrangian_optimization: bool = True
+    use_lagrangian_optimization: bool = False
     rules: Optional[Dict[str, FuzzyLossCustomRules]] = None
 
     def resolve(self, parent_config):
