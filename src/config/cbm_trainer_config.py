@@ -13,7 +13,7 @@ from config.training_config import ConceptTrainingConfig
 
 @dataclass
 class CBMTrainerConfig:
-    experiment_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    experiment_id: str = datetime.now().strftime("%Y%m%d_%H%M%S")
     seed: int = 42
     print_freq: int = 30
     device: str = "cuda"

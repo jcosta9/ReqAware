@@ -81,6 +81,7 @@ class FuzzyLossCustomRules:
 class FuzzyLossConfig:
     use_fuzzy_loss: bool = False
     use_lagrangian_optimization: bool = False
+    rho: float = 0.1
     rules: Optional[Dict[str, FuzzyLossCustomRules]] = None
 
     def resolve(self, parent_config):

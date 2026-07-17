@@ -246,13 +246,16 @@ class CBMConceptPredictorTrainer(BaseTrainer):
             print("lagrangian optimization")
             for name, loss_val in running_loss_individual.items():
                 epoch_avg_violation = loss_val / STEPS
-                rho = 0.1
-                # rho = self.config.fuzzy_loss.rules[name].rho
+                rho = self.config.fuzzy_loss.rho
 
                 old_lambda = self.criterion.fuzzy_lambdas[name]
                 new_lambda = old_lambda + rho * epoch_avg_violation
                 self.criterion.fuzzy_lambdas[name] = new_lambda
                 print(name, new_lambda)
+                self.writer.add_scalar(
+                    f"Lagrangian_Optimization/Concept_Predictor/{name}",
+                    new_lambda,
+                    epoch)
 
                 """
                 baseline without lagrangian optimization
